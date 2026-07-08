@@ -1,0 +1,141 @@
+/* ===== Pricing Page ===== */
+.pricing-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  background-color: #ffffff;
+}
+
+.pricing-section {
+  width: 100%;
+  padding: 80px 0;
+  flex: 1;
+}
+
+.pricing-section__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.pricing-section__title {
+  font-family: 'Inter', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 40px;
+}
+
+.pricing-section__cards {
+  display: flex;
+  gap: 32px;
+  align-items: stretch;
+}
+
+.pricing-section__card {
+  flex: 1;
+  max-width: 340px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  background: #FAF2F0;
+  border-radius: 12px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pricing-section__card--coming {
+  border: none;
+  background: #FAF2F0;
+  justify-content: center;
+  align-items: center;
+  min-height: 320px;
+}
+
+.pricing-section__plan-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0 0 6px;
+}
+
+.pricing-section__plan-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #6b7280;
+  margin: 0 0 20px;
+}
+
+.pricing-section__card--coming .pricing-section__plan-desc {
+  margin-bottom: 0;
+  text-align: center;
+}
+
+.pricing-section__card--coming .pricing-section__plan-name {
+  text-align: center;
+}
+
+.pricing-section__cta-btn {
+  display: inline-block;
+  width: 100%;
+  text-align: center;
+  padding: 14px 0;
+  background: #e8503a;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s;
+  margin-bottom: 24px;
+}
+
+.pricing-section__cta-btn:hover {
+  background: #d4432e;
+  transform: translateY(-1px);
+}
+
+.pricing-section__features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pricing-section__features li {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #374151;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+
+.pricing-section__check {
+  color: #1f2937;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .pricing-section__cards {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .pricing-section__card {
+    max-width: 100%;
+    width: 100%;
+  }
+}

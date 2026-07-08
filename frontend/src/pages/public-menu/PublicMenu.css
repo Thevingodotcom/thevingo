@@ -1,0 +1,471 @@
+/* ===== Public Menu Page Styles ===== */
+
+.public-menu-page {
+  min-height: 100vh;
+  background-color: #f8fafc;
+  color: #1e293b;
+  font-family: 'Inter', sans-serif;
+  padding-bottom: 80px;
+}
+
+/* Loading & Error States */
+.public-menu-loading,
+.public-menu-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 16px;
+  background-color: #f8fafc;
+  font-family: 'Inter', sans-serif;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #EF5C43;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Header Section */
+.public-menu-header {
+  background-color: #F6F6F6;
+  padding: 16px 16px;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.public-menu-restaurant-name {
+  font-size: 32px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.public-menu-tagline {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Main Container */
+.public-menu-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+/* Search and Filter Row */
+.public-menu-search-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 40px;
+}
+
+.public-menu-search-container {
+  display: flex;
+  align-items: center;
+  background-color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 450px;
+  height: 38px;
+}
+
+.public-menu-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0 16px;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1e293b;
+}
+
+.public-menu-search-input::placeholder {
+  color: #94a3b8;
+}
+
+.public-menu-search-btn {
+  background-color: #111827;
+  border: none;
+  width: 38px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.public-menu-search-btn:hover {
+  background-color: #1f2937;
+}
+
+.public-menu-filter-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.public-menu-filter-btn:hover {
+  transform: scale(1.05);
+}
+
+/* Menu Sections */
+.public-category-section {
+  margin-bottom: 40px;
+}
+
+.public-category-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 20px 0;
+}
+
+/* Grid layout for cards */
+.public-food-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+}
+
+/* Dish Card */
+.public-food-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.public-food-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+}
+
+.public-food-card-body {
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+}
+
+.public-food-img-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.public-food-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.public-food-details {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.public-food-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.public-food-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+/* Veg/Non-Veg indicator styling */
+.public-veg-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.public-veg-box {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+  padding: 1px;
+}
+
+.public-veg-box.non-veg {
+  border-color: #ef4444;
+}
+
+.public-veg-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #10b981;
+  border-radius: 50%;
+}
+
+.public-veg-dot.non-veg {
+  background-color: #ef4444;
+}
+
+.public-veg-text {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.public-food-card-footer {
+  background-color: #D9D9D9;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #374151;
+  border-top: 1px solid #D9D9D9;
+}
+
+/* Empty states */
+.public-category-empty,
+.public-menu-empty {
+  padding: 32px;
+  background-color: #ffffff;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 8px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Floating orange button */
+.public-menu-floating-filter-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: transparent !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0;
+  cursor: pointer;
+  z-index: 100;
+  border-radius: 50%;
+  box-shadow: none !important;
+  transition: transform 0.2s;
+  overflow: hidden;
+}
+
+.public-menu-floating-filter-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Modal Styling */
+.public-filter-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+  backdrop-filter: blur(2px);
+}
+
+.public-filter-modal {
+  background-color: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  animation: modalSlideUp 0.3s ease-out;
+}
+
+@keyframes modalSlideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.public-filter-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.public-filter-modal-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.public-filter-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #64748b;
+  line-height: 1;
+}
+
+.public-filter-options {
+  padding: 16px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.public-filter-option {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.public-filter-option:hover {
+  background-color: #f1f5f9;
+}
+
+.public-filter-option.active {
+  background-color: #EF5C43;
+  color: #ffffff;
+  border-color: #EF5C43;
+}
+
+/* Category Popover Styles */
+.public-category-popover {
+  position: fixed;
+  bottom: 96px;
+  right: 24px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  width: 160px;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.public-category-popover-item {
+  background: none;
+  border: none;
+  width: 100%;
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  transition: background-color 0.2s;
+  font-family: inherit;
+}
+
+.public-category-popover-item:hover {
+  background-color: #f1f5f9;
+}
+
+.public-category-popover-item.active {
+  color: #0f172a;
+  font-weight: 600;
+}
+
+/* Custom orange scrollbar for category popover */
+.public-category-popover::-webkit-scrollbar {
+  width: 5px;
+}
+
+.public-category-popover::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.public-category-popover::-webkit-scrollbar-thumb {
+  background-color: #EF5C43;
+  border-radius: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .public-food-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .public-food-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .public-menu-restaurant-name {
+    font-size: 26px;
+  }
+  
+  .public-menu-search-row {
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .public-food-grid {
+    grid-template-columns: 1fr;
+  }
+}
