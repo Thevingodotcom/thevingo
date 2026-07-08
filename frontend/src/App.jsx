@@ -22,6 +22,9 @@ import PricingPage from './pages/pricing/PricingPage';
 import ProductPage from './pages/product/ProductPage';
 import Register from './pages/auth/Register/Register';
 import PublicMenu from './pages/public-menu/PublicMenu';
+import OTPVerification from './pages/auth/OTPVerification/OTPVerification';
+import ResetPassword from './pages/auth/ResetPassword/ResetPassword';
+import ForgotPassword from './pages/auth/ForgotPassword/ForgotPassword';
 
 // Route guards
 import PrivateRoute from './routes/PrivateRoute';
@@ -368,6 +371,33 @@ function App() {
               }
               navigate('/dashboard');
             }} />
+          </PublicRoute>
+        } 
+      />
+
+      <Route 
+        path="/verify-otp" 
+        element={
+          <PublicRoute>
+            <OTPVerification />
+          </PublicRoute>
+        } 
+      />
+
+      <Route 
+        path="/forgot-password" 
+        element={
+          <PublicRoute>
+            <ForgotPassword />
+          </PublicRoute>
+        } 
+      />
+
+      <Route 
+        path="/reset-password" 
+        element={
+          <PublicRoute>
+            <ResetPassword />
           </PublicRoute>
         } 
       />

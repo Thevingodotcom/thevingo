@@ -3,9 +3,50 @@ const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 const path = require('path');
 const { getJWTSecret } = require('../utils/envHelper');
+const nodemailer = require('nodemailer');
 
 const tokenSecret = getJWTSecret();
 const tokenExpiry = process.env.JWT_EXPIRY || '24h';
+
+// Global SMTP Transporters for Connection Pooling (makes sending emails MUCH faster)
+let pooledOtpTransporter = null;
+let pooledWelcomeTransporter = null;
+
+const getOtpTransporter = () => {
+  if (!pooledOtpTransporter) {
+    pooledOtpTransporter = nodemailer.createTransport({
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      }
+    });
+  }
+  return pooledOtpTransporter;
+};
+
+const getWelcomeTransporter = () => {
+  if (!pooledWelcomeTransporter) {
+    pooledWelcomeTransporter = nodemailer.createTransport({
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.PURCHASE_SMTP_USER,
+        pass: process.env.PURCHASE_SMTP_PASS,
+      }
+    });
+  }
+  return pooledWelcomeTransporter;
+};
 
 // Helper to compare passwords (supports bcrypt hashing and plain text fallbacks)
 const comparePassword = async (inputPassword, savedPassword) => {
@@ -120,6 +161,19 @@ const comparePassword = async (inputPassword, savedPassword) => {
     } catch (indexErr) {
       console.error("Error during adding uq_email index:", indexErr.message);
     }
+
+    // 11. Create otp_codes table to store OTP separately before registration
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS otp_codes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        otp VARCHAR(10) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        is_verified TINYINT(1) DEFAULT 0,
+        UNIQUE KEY unique_email (email)
+      )
+    `);
+    console.log("Ensured otp_codes table exists for separate OTP tracking.");
   } catch (err) {
     console.error("Error during schema configuration sync:", err.message);
   }
@@ -290,6 +344,19 @@ exports.register = async (req, res) => {
       });
     }
 
+    // 1.5. Check if email was verified via OTP
+    const [otpRecords] = await pool.query(
+      'SELECT is_verified FROM otp_codes WHERE email = ? LIMIT 1',
+      [email]
+    );
+
+    if (otpRecords.length === 0 || otpRecords[0].is_verified === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please verify your email address before registering.'
+      });
+    }
+
     // 2. Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -310,6 +377,86 @@ exports.register = async (req, res) => {
     };
 
     const token = jwt.sign(payload, tokenSecret, { expiresIn: tokenExpiry });
+
+    // 5. Send Welcome Email from purchase@thevingo.com
+    try {
+      const welcomeTransporter = getWelcomeTransporter();
+
+      const welcomeMailOptions = {
+        from: `"The Vingo" <${process.env.PURCHASE_SMTP_USER}>`,
+        to: email,
+        subject: 'Welcome to The Vingo!',
+        html: `
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f9f9f9; padding: 40px 20px; font-family: Arial, sans-serif;">
+            <tr>
+              <td align="center">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border: 1px solid #eee; border-radius: 10px; max-width: 650px; margin: 0 auto; overflow: hidden;">
+                  
+                  <!-- Header -->
+                  <tr>
+                    <td align="center" style="padding: 30px; border-bottom: 2px solid #fcfcfc;">
+                      <img src="cid:thevingologo" alt="TheVingo" height="42" style="display: block; margin: 0 auto;" />
+                    </td>
+                  </tr>
+                  
+                  <!-- Email Body -->
+                  <tr>
+                    <td style="padding: 40px 30px;">
+                      <h2 style="color: #333; margin-top: 0; margin-bottom: 25px;">Welcome to The Vingo!</h2>
+                      <p style="color: #333; font-size: 16px;">Hi ${name},</p>
+                      <p style="color: #555; font-size: 16px; line-height: 1.6;">We are thrilled to have you on board! Your account for <strong>${restaurant_name}</strong> has been successfully created.</p>
+                      <p style="color: #555; font-size: 16px; line-height: 1.6;">You can now log in to your dashboard and start managing your digital menu card with ease.</p>
+                      
+                      <div style="margin-top: 35px;">
+                        <p style="color: #555; font-size: 15px; margin: 0;">Regards,</p>
+                        <p style="color: #333; font-size: 16px; font-weight: bold; margin: 5px 0 0 0;">The Vingo Team</p>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- Custom Footer Block -->
+                  <tr>
+                    <td style="background-color: #EF5C43; padding: 30px;">
+                      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <!-- Left Side -->
+                          <td width="50%" align="left" valign="middle">
+                            <div style="background-color: #ffffff; padding: 6px 12px; border-radius: 6px; display: inline-block;">
+                              <img src="cid:thevingologo" alt="TheVingo" height="28" style="display: block;" />
+                            </div>
+                          </td>
+                          <!-- Right Side: Contact Info -->
+                          <td width="50%" align="right" valign="middle" style="color: #ffffff; font-size: 15px; line-height: 1.8;">
+                            <a href="mailto:sales@thevingo.com" style="color: #ffffff; text-decoration: none;">sales@thevingo.com</a><br/>
+                            <a href="https://www.thevingo.com" style="color: #ffffff; text-decoration: none;">www.thevingo.com</a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        `,
+        attachments: [
+          {
+            filename: 'logo.png',
+            path: 'd:/Thevingo/backend/logo.png',
+            cid: 'thevingologo'
+          }
+        ]
+      };
+
+      // We send it asynchronously without awaiting to not block the response, or we can await it.
+      // Awaiting is safer to know it went through, but since we don't want to fail the registration if email fails, we catch it.
+      // Send email asynchronously in the background to avoid blocking the response
+      welcomeTransporter.sendMail(welcomeMailOptions).catch(err => {
+        console.error('Background welcome email send error:', err);
+      });
+    } catch (mailError) {
+      console.error('Failed to send welcome email:', mailError);
+    }
 
     return res.status(201).json({
       success: true,
@@ -512,5 +659,159 @@ exports.getDashboardStats = async (req, res) => {
       success: false,
       message: 'Internal server error.'
     });
+  }
+};
+
+/**
+ * @desc Generate and send OTP to user email (for registration/forgot password)
+ * @route POST /api/auth/send-otp
+ */
+exports.sendOTP = async (req, res) => {
+  try {
+    const { email, type } = req.body; // type can be 'registration' or 'reset'
+    
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email is required.' });
+    }
+
+    // Generate 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiry = new Date();
+    expiry.setMinutes(expiry.getMinutes() + 10); // OTP expires in 10 minutes
+    
+    // Check if user exists in the main table
+    const [users] = await pool.query('SELECT id, is_active FROM users WHERE email = ? AND is_deleted = 0', [email]);
+    
+    if (type === 'registration' && users.length > 0) {
+      return res.status(400).json({ success: false, message: 'A user with this email already exists.' });
+    } else if (type === 'reset' && users.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // Upsert into otp_codes table
+    await pool.query(
+      `INSERT INTO otp_codes (email, otp, expires_at, is_verified) 
+       VALUES (?, ?, ?, 0) 
+       ON DUPLICATE KEY UPDATE otp = ?, expires_at = ?, is_verified = 0`,
+      [email, otp, expiry, otp, expiry]
+    );
+
+    // Configure Nodemailer for Hostinger using Connection Pool
+    const transporter = getOtpTransporter();
+
+    const mailOptions = {
+      from: `"The Vingo" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: type === 'reset' ? 'Your Password Reset OTP - The Vingo' : 'Verify Your Email - The Vingo',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #333;">${type === 'reset' ? 'Password Reset' : 'Email Verification'}</h2>
+          <p style="color: #555; font-size: 16px;">Your One-Time Password (OTP) is:</p>
+          <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #f97316; margin: 20px 0;">${otp}</div>
+          <p style="color: #777; font-size: 14px;">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
+        </div>
+      `
+    };
+
+    // Send email asynchronously in the background to avoid blocking the response
+    transporter.sendMail(mailOptions).catch(err => {
+      console.error('Background OTP email send error:', err);
+    });
+
+    return res.status(200).json({ success: true, message: 'OTP sent successfully.' });
+
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to send OTP.' });
+  }
+};
+
+/**
+ * @desc Verify OTP
+ * @route POST /api/auth/verify-otp
+ */
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Email and OTP are required.' });
+    }
+
+    const [otpRecords] = await pool.query('SELECT id, otp, expires_at FROM otp_codes WHERE email = ?', [email]);
+    
+    if (otpRecords.length === 0) {
+      return res.status(404).json({ success: false, message: 'No OTP requested for this email.' });
+    }
+
+    const record = otpRecords[0];
+
+    if (record.otp !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid OTP.' });
+    }
+
+    if (new Date() > new Date(record.expires_at)) {
+      return res.status(400).json({ success: false, message: 'OTP has expired.' });
+    }
+
+    // Mark email as verified
+    await pool.query(
+      'UPDATE otp_codes SET is_verified = 1, otp = "VERIFIED" WHERE email = ?',
+      [email]
+    );
+
+    return res.status(200).json({ success: true, message: 'OTP verified successfully.' });
+    
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+/**
+ * @desc Reset Password
+ * @route POST /api/auth/reset-password
+ */
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Email, OTP, and new password are required.' });
+    }
+
+    // 1. Verify that the OTP was verified and belongs to this email
+    // The verifyOTP function sets otp = "VERIFIED" and is_verified = 1
+    const [otpRecords] = await pool.query(
+      'SELECT id FROM otp_codes WHERE email = ? AND is_verified = 1 AND otp = "VERIFIED"',
+      [email]
+    );
+
+    if (otpRecords.length === 0) {
+      return res.status(403).json({ success: false, message: 'Invalid or expired password reset request. Please request a new OTP.' });
+    }
+
+    // 2. Hash the new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // 3. Update the user's password in the users table
+    const [updateResult] = await pool.query(
+      'UPDATE users SET password = ? WHERE email = ? AND is_deleted = 0',
+      [hashedPassword, email]
+    );
+
+    if (updateResult.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // 4. Delete the OTP record to prevent reuse
+    await pool.query('DELETE FROM otp_codes WHERE email = ?', [email]);
+
+    return res.status(200).json({ success: true, message: 'Password reset successfully.' });
+
+  } catch (error) {
+    console.error('Reset Password error:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 };

@@ -93,9 +93,9 @@ const Login = ({ onLogin }) => {
             <button type="submit" className="login-submit-btn" disabled={loading}>
               {loading ? 'Logging in...' : 'Login'}
             </button>
-            <a href="#forgot" className="login-forgot-link">
+            <Link to="/forgot-password" className="login-forgot-link">
               Forgot password?
-            </a>
+            </Link>
           </div>
         </form>
       </div>

@@ -12,6 +12,15 @@ router.post('/register', authController.register);
 // POST /api/auth/check-email
 router.post('/check-email', authController.checkEmail);
 
+// POST /api/auth/send-otp
+router.post('/send-otp', authController.sendOTP);
+
+// POST /api/auth/verify-otp
+router.post('/verify-otp', authController.verifyOTP);
+
+// POST /api/auth/reset-password
+router.post('/reset-password', authController.resetPassword);
+
 // GET /api/auth/profile (Protected)
 router.get('/profile', authMiddleware, authController.getProfile);
 

@@ -14,7 +14,8 @@
 
 /* Logo Above Card */
 .register-logo-wrapper {
-  margin-bottom: 32px;
+  margin-bottom: 16px;
+  margin-top: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
