@@ -442,7 +442,7 @@ exports.register = async (req, res) => {
         attachments: [
           {
             filename: 'logo.png',
-            path: 'd:/Thevingo/backend/logo.png',
+            path: path.join(__dirname, '../logo.png'),
             cid: 'thevingologo'
           }
         ]
