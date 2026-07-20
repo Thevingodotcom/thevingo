@@ -1,0 +1,169 @@
+:root {
+  /* ===============================
+     FONT FAMILY
+     =============================== */
+  --font-family: 'Poppins', 'Inter', sans-serif;
+
+  /* ===============================
+     PRIMITIVE FONT SIZES (Layer 1)
+     =============================== */
+  --size-42: 42px;
+  --size-36: 36px;
+  --size-32: 32px;
+  --size-30: 30px;
+  --size-28: 28px;
+  --size-26: 26px;
+  --size-24: 24px;
+  --size-22: 22px;
+  --size-20: 20px;
+  --size-18: 18px;
+  --size-16: 16px;
+  --size-15-5: 15.5px;
+  --size-15: 15px;
+  --size-14: 14px;
+  --size-13-5: 13.5px;
+  --size-13: 13px;
+  --size-12: 12px;
+  --size-11-5: 11.5px;
+  --size-11: 11px;
+  --size-10-5: 10.5px;
+  --size-10: 10px;
+  --size-9-5: 9.5px;
+  --size-9: 9px;
+  --size-8-5: 8.5px;
+  --size-8: 8px;
+  --size-7-5: 7.5px;
+
+  /* ===============================
+     FONT WEIGHTS (Layer 1)
+     =============================== */
+  --weight-light: 200;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+  --weight-black: 900;
+
+  /* ===============================
+     PAGE HEADINGS (Layer 2)
+     =============================== */
+  --page-title-size: var(--size-42);
+  --page-title-weight: var(--weight-bold);
+  
+  --page-subtitle-size: var(--size-32);
+  --page-subtitle-weight: var(--weight-semibold);
+
+  /* ===============================
+     SECTION HEADINGS (Layer 2)
+     =============================== */
+  --section-title-size: var(--size-24);
+  --section-title-weight: var(--weight-semibold);
+  
+  --section-subtitle-size: var(--size-20);
+  --section-subtitle-weight: var(--weight-medium);
+
+  /* ===============================
+     CARD TITLES (Layer 2)
+     =============================== */
+  --card-title-size: var(--size-18);
+  --card-title-weight: var(--weight-bold);
+  
+  --card-subtitle-size: var(--size-16);
+  --card-subtitle-weight: var(--weight-medium);
+
+  /* ===============================
+     BODY TYPOGRAPHY (Layer 2)
+     =============================== */
+  --body-large-size: var(--size-24);
+  --body-large-weight: var(--weight-regular);
+
+  --body-size: var(--size-16);
+  --body-weight: var(--weight-regular);
+  
+  --body-small-size: var(--size-14);
+  --body-small-weight: var(--weight-regular);
+
+  /* ===============================
+     FORMS (Layer 2)
+     =============================== */
+  --label-size: var(--size-13);
+  --label-weight: var(--weight-semibold);
+  
+  --input-size: var(--size-14);
+  --input-weight: var(--weight-regular);
+
+  --placeholder-size: var(--size-18);
+  --placeholder-weight: var(--weight-regular);
+
+  --helper-text-size: var(--size-12);
+  --helper-text-weight: var(--weight-regular);
+
+  --error-text-size: var(--size-12);
+  --error-text-weight: var(--weight-medium);
+
+  /* ===============================
+     BUTTONS (Layer 2)
+     =============================== */
+  --button-large-size: var(--size-18);
+  --button-large-weight: var(--weight-semibold);
+
+  --button-size: var(--size-16);
+  --button-weight: var(--weight-medium);
+
+  --button-small-size: var(--size-14);
+  --button-small-weight: var(--weight-medium);
+
+  /* ===============================
+     NAVIGATION (Layer 2)
+     =============================== */
+  --navbar-size: var(--size-16);
+  --navbar-weight: var(--weight-medium);
+  
+  --sidebar-size: var(--size-14);
+  --sidebar-weight: var(--weight-medium);
+  
+  --menu-size: var(--size-15);
+  --menu-weight: var(--weight-medium);
+  
+  --tab-size: var(--size-16);
+  --tab-weight: var(--weight-medium);
+
+  /* ===============================
+     TABLES (Layer 2)
+     =============================== */
+  --table-header-size: var(--size-14);
+  --table-header-weight: var(--weight-semibold);
+  
+  --table-cell-size: var(--size-14);
+  --table-cell-weight: var(--weight-regular);
+
+  /* ===============================
+     MISC & COMPONENTS (Layer 2)
+     =============================== */
+  --caption-size: var(--size-12);
+  --caption-weight: var(--weight-regular);
+
+  --badge-size: var(--size-11);
+  --badge-weight: var(--weight-semibold);
+
+  --chip-size: var(--size-13-5);
+  --chip-weight: var(--weight-medium);
+  
+  --link-size: var(--size-16);
+  --link-weight: var(--weight-regular);
+
+  --food-name-size: var(--size-13-5);
+  --food-name-weight: var(--weight-semibold);
+
+  --food-price-size: var(--size-13);
+  --food-price-weight: var(--weight-bold);
+  
+  --food-veg-size: var(--size-11);
+  --food-veg-weight: var(--weight-medium);
+  
+  --sidebar-tiny-size: var(--size-9-5);
+  
+  --tiny-text-size: var(--size-10);
+  --micro-text-size: var(--size-8);
+}

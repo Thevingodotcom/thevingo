@@ -70,7 +70,7 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
 
   return (
     <div className="settings-page-container">
-      <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', margin: '0 0 24px 0' }}>Setting</h2>
+      <h2 style={{ fontSize: 'var(--section-subtitle-size)', fontWeight: 'var(--weight-bold)', color: '#111827', margin: '0 0 24px 0' }}>Setting</h2>
 
       {/* Card 1: Brand Customization */}
       <div className="settings-card" style={{ marginBottom: '24px' }}>

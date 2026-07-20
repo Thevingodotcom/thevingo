@@ -36,8 +36,8 @@
 
 .landing-hero__title {
   font-family: 'Inter', sans-serif;
-  font-size: 42px;
-  font-weight: 700;
+  font-size: var(--page-title-size);
+  font-weight: var(--weight-bold);
   color: #1f2937;
   line-height: 1.2;
   margin: 0;
@@ -46,8 +46,8 @@
 
 .landing-hero__subtitle {
   font-family: 'Inter', sans-serif;
-  font-size: 24px;
-  font-weight: 400;
+  font-size: var(--section-title-size);
+  font-weight: var(--weight-regular);
   color: #000000;
   line-height: 1.7;
   margin: 20px 0 35px;
@@ -62,8 +62,8 @@
 
 .landing-hero__btn {
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--label-size);
+  font-weight: var(--weight-semibold);
   text-decoration: none;
   border-radius: 6px;
   padding: 10px 22px;
@@ -138,8 +138,8 @@
 
 .landing-features__title {
   font-family: 'Inter', sans-serif;
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--section-title-size);
+  font-weight: var(--weight-bold);
   color: #1f2937;
   margin: 0 0 40px 0;
   letter-spacing: -0.01em;
@@ -178,8 +178,8 @@
 
 .landing-features__label {
   font-family: 'Poppins', sans-serif;
-  font-size: 20px;
-  font-weight: 200;
+  font-size: var(--section-subtitle-size);
+  font-weight: var(--weight-light);
   color: #000000;
   text-align: center;
   line-height: 1.0;
@@ -189,8 +189,8 @@
 
 .landing-features__detail-link {
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--label-size);
+  font-weight: var(--weight-medium);
   color: #EF5C43;
   text-decoration: underline;
   transition: color 0.2s ease;
@@ -218,8 +218,8 @@
 
 .landing-testimonials__title {
   font-family: 'Inter', sans-serif;
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--section-title-size);
+  font-weight: var(--weight-bold);
   color: #1f2937;
   margin: 0 0 32px 0;
   letter-spacing: -0.01em;
@@ -248,8 +248,8 @@
 
 .landing-testimonials__quote {
   font-family: 'Inter', sans-serif;
-  font-size: 24px;
-  font-weight: 400;
+  font-size: var(--section-title-size);
+  font-weight: var(--weight-regular);
   color: #000000;
   line-height: 1.7;
   margin: 0;
@@ -261,8 +261,8 @@
 
 .landing-testimonials__author {
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--caption-size);
+  font-weight: var(--weight-semibold);
   color: #000000;
   margin: 4px 0 0 0;
 }
@@ -293,8 +293,8 @@
 
 .landing-howitworks__title {
   font-family: 'Inter', sans-serif;
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--section-title-size);
+  font-weight: var(--weight-bold);
   color: #1f2937;
   margin: 0 0 28px 0;
   letter-spacing: -0.01em;
@@ -314,16 +314,16 @@
 
 .landing-howitworks__step-label {
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--label-size);
+  font-weight: var(--weight-bold);
   color: #000000;
   margin: 0;
 }
 
 .landing-howitworks__step-desc {
   font-family: 'Inter', sans-serif;
-  font-size: 24px;
-  font-weight: 400;
+  font-size: var(--section-title-size);
+  font-weight: var(--weight-regular);
   color: #000000;
   line-height: 1.6;
   margin: 0;
@@ -370,8 +370,8 @@
 
 .landing-pricing__title {
   font-family: 'Inter', sans-serif;
-  font-size: 32px;
-  font-weight: 700;
+  font-size: var(--page-subtitle-size);
+  font-weight: var(--weight-bold);
   color: #1f2937;
   margin: 0 0 40px;
 }
@@ -402,16 +402,16 @@
 
 .landing-pricing__plan-name {
   font-family: 'Inter', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: var(--body-large-size);
+  font-weight: var(--weight-bold);
   color: #1f2937;
   margin: 0 0 6px;
 }
 
 .landing-pricing__plan-desc {
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 400;
+  font-size: var(--body-small-size);
+  font-weight: var(--weight-regular);
   color: #6b7280;
   margin: 0 0 20px;
 }
@@ -433,8 +433,8 @@
   background: #e8503a;
   color: #fff;
   font-family: 'Inter', sans-serif;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--body-size);
+  font-weight: var(--weight-semibold);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -459,8 +459,8 @@
 
 .landing-pricing__features li {
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 400;
+  font-size: var(--body-small-size);
+  font-weight: var(--weight-regular);
   color: #374151;
   display: flex;
   align-items: flex-start;
@@ -470,7 +470,7 @@
 
 .landing-pricing__check {
   color: #1f2937;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   flex-shrink: 0;
 }
 
@@ -494,12 +494,12 @@
   }
   
   .landing-hero__title {
-    font-size: 30px;
+    font-size: var(--page-subtitle-size);
     max-width: 100%;
   }
   
   .landing-hero__subtitle {
-    font-size: 18px;
+    font-size: var(--body-large-size);
     line-height: 1.5;
     margin: 16px 0 24px;
     max-width: 100%;
@@ -539,7 +539,7 @@
   }
   
   .landing-features__title {
-    font-size: 20px;
+    font-size: var(--section-subtitle-size);
     margin-bottom: 24px;
   }
   
@@ -557,12 +557,12 @@
   }
   
   .landing-testimonials__title {
-    font-size: 20px;
+    font-size: var(--section-subtitle-size);
     margin-bottom: 24px;
   }
   
   .landing-testimonials__quote {
-    font-size: 18px;
+    font-size: var(--body-large-size);
     line-height: 1.6;
   }
 
@@ -584,12 +584,12 @@
   }
   
   .landing-howitworks__title {
-    font-size: 20px;
+    font-size: var(--section-subtitle-size);
     margin-bottom: 20px;
   }
   
   .landing-howitworks__step-desc {
-    font-size: 18px;
+    font-size: var(--body-large-size);
     line-height: 1.5;
   }
   
@@ -604,7 +604,7 @@
   }
   
   .landing-pricing__title {
-    font-size: 24px;
+    font-size: var(--section-title-size);
     margin-bottom: 24px;
     text-align: center;
   }

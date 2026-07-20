@@ -83,7 +83,7 @@ const ForgotPassword = () => {
             >
               {loading ? 'Sending...' : 'Send OTP'}
             </button>
-            <Link to="/login" className="login-forgot-link" style={{ marginLeft: '16px', textDecoration: 'none', color: '#7c7c7c', fontSize: '13px' }}>
+            <Link to="/login" className="login-forgot-link" style={{ marginLeft: '16px', textDecoration: 'none', color: '#7c7c7c', fontSize: 'var(--label-size)' }}>
               Back to Login
             </Link>
           </div>

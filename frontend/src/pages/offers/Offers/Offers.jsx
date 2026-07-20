@@ -204,7 +204,7 @@ function Offers({ offers, setOffers }) {
 
   return (
     <div className="offers-page-container" style={{ position: 'relative', minHeight: '80vh', paddingBottom: '80px' }}>
-      <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', margin: '0 0 24px 0' }}>Offer</h2>
+      <h2 style={{ fontSize: 'var(--section-subtitle-size)', fontWeight: 'var(--weight-bold)', color: '#111827', margin: '0 0 24px 0' }}>Offer</h2>
 
       <div className="offers-list">
         {offers.length > 0 ? (
@@ -273,8 +273,8 @@ function Offers({ offers, setOffers }) {
           ))
         ) : (
           <div className="empty-state" style={{ background: '#fff', borderRadius: '8px', padding: '40px', textAlign: 'center', border: '1px solid #e5e7eb' }}>
-            <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '600' }}>No offers active</h4>
-            <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>Click the plus button to add a new marketing promotion.</p>
+            <h4 style={{ margin: '0 0 4px 0', fontSize: 'var(--menu-size)', fontWeight: 'var(--weight-semibold)' }}>No offers active</h4>
+            <p style={{ margin: 0, fontSize: 'var(--label-size)', color: '#6b7280' }}>Click the plus button to add a new marketing promotion.</p>
           </div>
         )}
       </div>
@@ -352,16 +352,16 @@ function Offers({ offers, setOffers }) {
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
                       required 
-                      style={{ padding: '8px 10px', fontSize: '13px' }}
+                      style={{ padding: '8px 10px', fontSize: 'var(--label-size)' }}
                     />
-                    <span style={{ fontSize: '13px', color: '#6b7280' }}>to</span>
+                    <span style={{ fontSize: 'var(--label-size)', color: '#6b7280' }}>to</span>
                     <input 
                       type="date" 
                       className="form-input" 
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                       required 
-                      style={{ padding: '8px 10px', fontSize: '13px' }}
+                      style={{ padding: '8px 10px', fontSize: 'var(--label-size)' }}
                     />
                   </div>
                 </div>

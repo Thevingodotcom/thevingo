@@ -3,7 +3,7 @@ import { API_URL } from '../../../config';
 
 // Custom inline SVG icons for dashboard circles
 const PercentBadgeIcon = () => (
-  <span style={{ fontSize: '18px', fontWeight: '800', fontFamily: 'sans-serif' }}>%</span>
+  <span style={{ fontSize: 'var(--body-large-size)', fontWeight: 'var(--weight-extrabold)', fontFamily: 'sans-serif' }}>%</span>
 );
 
 const QRBadgeIcon = () => (
@@ -72,7 +72,7 @@ function Dashboard({ categories, offers }) {
 
   return (
     <div className="dashboard-page-container">
-      <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', margin: '0 0 24px 0' }}>Dashboard</h2>
+      <h2 style={{ fontSize: 'var(--section-subtitle-size)', fontWeight: 'var(--weight-bold)', color: '#111827', margin: '0 0 24px 0' }}>Dashboard</h2>
 
       {/* Stats Cards Grid Layout */}
       <div className="dash-stats-grid">
