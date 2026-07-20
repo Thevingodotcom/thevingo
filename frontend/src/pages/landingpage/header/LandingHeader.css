@@ -53,8 +53,8 @@
 
 .landing-header__nav-link {
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--label-size);
+  font-weight: var(--weight-medium);
   color: #1f2937;
   text-decoration: none;
   transition: all 0.2s ease;
@@ -85,7 +85,7 @@
 
 .landing-header__nav-link.active {
   color: #EF5C43;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 /* Action Buttons */
@@ -97,8 +97,8 @@
 
 .landing-header__btn {
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--caption-size);
+  font-weight: var(--weight-medium);
   text-decoration: none;
   border-radius: 4px;
   padding: 7px 16px;
@@ -200,8 +200,8 @@
 
 .landing-header__mobile-link {
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--body-small-size);
+  font-weight: var(--weight-medium);
   color: #1f2937;
   text-decoration: none;
   display: block;
@@ -210,7 +210,7 @@
 
 .landing-header__mobile-link.active {
   color: #EF5C43;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .mobile-actions-divider {
@@ -222,8 +222,8 @@
 
 .landing-header__mobile-btn {
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--label-size);
+  font-weight: var(--weight-semibold);
   text-decoration: none;
   border-radius: 6px;
   padding: 10px 0;

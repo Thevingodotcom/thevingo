@@ -33,7 +33,7 @@ function Distribution({ restaurantName, setRestaurantName, tagline, setTagline }
 
   return (
     <div className="distribution-page-container">
-      <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', margin: '0 0 32px 0' }}>Distribution</h2>
+      <h2 style={{ fontSize: 'var(--section-subtitle-size)', fontWeight: 'var(--weight-bold)', color: '#111827', margin: '0 0 32px 0' }}>Distribution</h2>
 
       <div className="dist-split-layout">
         {/* Left Input Fields Column */}

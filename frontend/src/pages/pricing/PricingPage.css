@@ -21,8 +21,8 @@
 
 .pricing-section__title {
   font-family: 'Inter', sans-serif;
-  font-size: 32px;
-  font-weight: 700;
+  font-size: var(--page-subtitle-size);
+  font-weight: var(--weight-bold);
   color: #1f2937;
   margin: 0 0 40px;
 }
@@ -55,16 +55,16 @@
 
 .pricing-section__plan-name {
   font-family: 'Inter', sans-serif;
-  font-size: 18px;
-  font-weight: 700;
+  font-size: var(--body-large-size);
+  font-weight: var(--weight-bold);
   color: #1f2937;
   margin: 0 0 6px;
 }
 
 .pricing-section__plan-desc {
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 400;
+  font-size: var(--body-small-size);
+  font-weight: var(--weight-regular);
   color: #6b7280;
   margin: 0 0 20px;
 }
@@ -86,8 +86,8 @@
   background: #e8503a;
   color: #fff;
   font-family: 'Inter', sans-serif;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--body-size);
+  font-weight: var(--weight-semibold);
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -112,8 +112,8 @@
 
 .pricing-section__features li {
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 400;
+  font-size: var(--body-small-size);
+  font-weight: var(--weight-regular);
   color: #374151;
   display: flex;
   align-items: flex-start;
@@ -123,7 +123,7 @@
 
 .pricing-section__check {
   color: #1f2937;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   flex-shrink: 0;
 }
 

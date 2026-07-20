@@ -24,16 +24,16 @@
 
 .landing-footer__brand {
   font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--menu-size);
+  font-weight: var(--weight-bold);
   color: #ffffff;
   margin: 0;
 }
 
 .landing-footer__email {
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 400;
+  font-size: var(--caption-size);
+  font-weight: var(--weight-regular);
   color: #ffffff;
   opacity: 0.7;
   margin: 0;
@@ -56,8 +56,8 @@
 
 .landing-footer__link {
   font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--label-size);
+  font-weight: var(--weight-medium);
   color: #ffffff;
   text-decoration: none;
   transition: color 0.2s ease;

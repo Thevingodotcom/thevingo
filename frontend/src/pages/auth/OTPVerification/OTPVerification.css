@@ -44,21 +44,21 @@
 
 .otp-verification-card h2 {
   color: #1e293b;
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--section-title-size);
+  font-weight: var(--weight-bold);
   margin: 0 0 12px;
 }
 
 .otp-verification-subtitle {
   color: #64748b;
-  font-size: 16px;
+  font-size: var(--body-size);
   margin: 0 0 32px;
   line-height: 1.5;
 }
 
 .otp-verification-subtitle span {
   color: #f97316;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .otp-input-group {
@@ -74,8 +74,8 @@
   border-radius: 12px;
   border: 1px solid #cbd5e1;
   background: rgba(255, 255, 255, 0.9);
-  font-size: 24px;
-  font-weight: 600;
+  font-size: var(--section-title-size);
+  font-weight: var(--weight-semibold);
   text-align: center;
   color: #0f172a;
   transition: all 0.3s ease;
@@ -99,8 +99,8 @@
   border: none;
   border-radius: 12px;
   padding: 16px 32px;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--body-size);
+  font-weight: var(--weight-semibold);
   width: 100%;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -127,14 +127,14 @@
 .otp-resend {
   margin-top: 24px;
   color: #64748b;
-  font-size: 14px;
+  font-size: var(--body-small-size);
 }
 
 .otp-resend button {
   background: none;
   border: none;
   color: #f97316;
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
   cursor: pointer;
   padding: 0;
   margin-left: 6px;
@@ -149,15 +149,15 @@
 .otp-error-message {
   color: #ef4444;
   margin-bottom: 20px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--body-small-size);
+  font-weight: var(--weight-medium);
 }
 
 .otp-success-message {
   color: #10b981;
   margin-bottom: 20px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--body-small-size);
+  font-weight: var(--weight-medium);
 }
 
 @media (max-width: 480px) {
@@ -172,6 +172,6 @@
   .otp-input {
     width: 40px;
     height: 48px;
-    font-size: 20px;
+    font-size: var(--section-subtitle-size);
   }
 }

@@ -462,8 +462,8 @@ function MenuList({ categories, setCategories }) {
               background: 'none',
               border: 'none',
               color: '#EF5C43',
-              fontWeight: '700',
-              fontSize: '12px',
+              fontWeight: 'var(--weight-bold)',
+              fontSize: 'var(--caption-size)',
               cursor: 'pointer',
               marginLeft: '8px',
               fontFamily: "'Inter', sans-serif"
@@ -564,7 +564,7 @@ function MenuList({ categories, setCategories }) {
                     </article>
                   ))
                 ) : (
-                  <div className="category-empty-state" style={{ gridColumn: '1 / -1', padding: '24px', background: '#f9fafb', borderRadius: '8px', border: '1.5px dashed #e5e7eb', textAlign: 'center', fontSize: '13px', color: '#6b7280' }}>
+                  <div className="category-empty-state" style={{ gridColumn: '1 / -1', padding: '24px', background: '#f9fafb', borderRadius: '8px', border: '1.5px dashed #e5e7eb', textAlign: 'center', fontSize: 'var(--label-size)', color: '#6b7280' }}>
                     No dishes in this category yet.
                   </div>
                 )}
@@ -589,8 +589,8 @@ function MenuList({ categories, setCategories }) {
               color: '#fff',
               border: 'none',
               borderRadius: '6px',
-              fontSize: '18px',
-              fontWeight: '700',
+              fontSize: 'var(--body-large-size)',
+              fontWeight: 'var(--weight-bold)',
               cursor: 'pointer',
               boxShadow: '0 4px 6px -1px rgba(239, 92, 67, 0.2)',
               transition: 'transform 0.15s, background-color 0.15s'
@@ -619,8 +619,8 @@ function MenuList({ categories, setCategories }) {
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-              fontSize: '18px',
-              fontWeight: '700',
+              fontSize: 'var(--body-large-size)',
+              fontWeight: 'var(--weight-bold)',
               color: '#374151'
             }}
             title="Cancel Selection"
@@ -762,7 +762,7 @@ function MenuList({ categories, setCategories }) {
                         onChange={(e) => setAvailBreakfast(e.target.checked)}
                         className="offer-row-checkbox"
                       />
-                      <span style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Breakfast</span>
+                      <span style={{ fontSize: 'var(--label-size)', color: '#111827', fontWeight: 'var(--weight-medium)' }}>Breakfast</span>
                     </label>
 
                     <label className="availability-check-label">
@@ -772,7 +772,7 @@ function MenuList({ categories, setCategories }) {
                         onChange={(e) => setAvailDinner(e.target.checked)}
                         className="offer-row-checkbox"
                       />
-                      <span style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Dinner</span>
+                      <span style={{ fontSize: 'var(--label-size)', color: '#111827', fontWeight: 'var(--weight-medium)' }}>Dinner</span>
                     </label>
 
                     <label className="availability-check-label">
@@ -782,7 +782,7 @@ function MenuList({ categories, setCategories }) {
                         onChange={(e) => setAvailLunch(e.target.checked)}
                         className="offer-row-checkbox"
                       />
-                      <span style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Lunch</span>
+                      <span style={{ fontSize: 'var(--label-size)', color: '#111827', fontWeight: 'var(--weight-medium)' }}>Lunch</span>
                     </label>
                   </div>
                 </div>
@@ -791,7 +791,7 @@ function MenuList({ categories, setCategories }) {
                   <label className="dish-label">Dish type</label>
                   <div className="dish-type-radio-group">
                     <label className="dish-radio-label">
-                      <span style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Veg</span>
+                      <span style={{ fontSize: 'var(--label-size)', color: '#111827', fontWeight: 'var(--weight-medium)' }}>Veg</span>
                       <input
                         type="radio"
                         name="dishType"
@@ -803,7 +803,7 @@ function MenuList({ categories, setCategories }) {
                     </label>
 
                     <label className="dish-radio-label" style={{ marginLeft: '12px' }}>
-                      <span style={{ fontSize: '13px', color: '#111827', fontWeight: 500 }}>Non Veg</span>
+                      <span style={{ fontSize: 'var(--label-size)', color: '#111827', fontWeight: 'var(--weight-medium)' }}>Non Veg</span>
                       <input
                         type="radio"
                         name="dishType"
@@ -891,12 +891,12 @@ function MenuList({ categories, setCategories }) {
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px', padding: '24px' }}>
             <div className="modal-header" style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
-              <h3 className="modal-title" style={{ fontSize: '18px', fontWeight: '700', color: '#111827' }}>Import Menu from Excel/CSV</h3>
-              <button className="modal-close-btn" style={{ fontSize: '24px', cursor: 'pointer', background: 'none', border: 'none', color: '#6b7280' }} onClick={() => setIsImportModalOpen(false)}>×</button>
+              <h3 className="modal-title" style={{ fontSize: 'var(--body-large-size)', fontWeight: 'var(--weight-bold)', color: '#111827' }}>Import Menu from Excel/CSV</h3>
+              <button className="modal-close-btn" style={{ fontSize: 'var(--section-title-size)', cursor: 'pointer', background: 'none', border: 'none', color: '#6b7280' }} onClick={() => setIsImportModalOpen(false)}>×</button>
             </div>
 
-            <div style={{ marginTop: '16px', fontSize: '14px', color: '#374151', lineHeight: '1.6' }}>
-              <p style={{ fontWeight: '600', marginBottom: '8px' }}>Instructions:</p>
+            <div style={{ marginTop: '16px', fontSize: 'var(--body-small-size)', color: '#374151', lineHeight: '1.6' }}>
+              <p style={{ fontWeight: 'var(--weight-semibold)', marginBottom: '8px' }}>Instructions:</p>
               <ol style={{ paddingLeft: '20px', margin: '0 0 16px 0', color: '#4b5563' }}>
                 <li>Download the Excel template using the button below.</li>
                 <li>Add your menu details, ensuring columns are formatted correctly.</li>
@@ -914,7 +914,7 @@ function MenuList({ categories, setCategories }) {
                   color: '#fff',
                   border: 'none',
                   borderRadius: '6px',
-                  fontWeight: '600',
+                  fontWeight: 'var(--weight-semibold)',
                   cursor: 'pointer',
                   marginBottom: '20px',
                   boxShadow: '0 4px 6px -1px rgba(239, 92, 67, 0.1)',
@@ -927,7 +927,7 @@ function MenuList({ categories, setCategories }) {
               </button>
 
               <div style={{ border: '2px dashed #d1d5db', padding: '24px', borderRadius: '8px', textAlign: 'center', background: '#f9fafb' }}>
-                <label className="file-upload-btn-label" style={{ display: 'inline-block', padding: '10px 20px', background: '#EF5C43', color: '#fff', borderRadius: '4px', cursor: 'pointer', fontWeight: '600', boxShadow: '0 2px 4px rgba(239, 92, 67, 0.1)' }}>
+                <label className="file-upload-btn-label" style={{ display: 'inline-block', padding: '10px 20px', background: '#EF5C43', color: '#fff', borderRadius: '4px', cursor: 'pointer', fontWeight: 'var(--weight-semibold)', boxShadow: '0 2px 4px rgba(239, 92, 67, 0.1)' }}>
                   Choose CSV File
                   <input
                     type="file"
@@ -973,7 +973,7 @@ function MenuList({ categories, setCategories }) {
                 <div className="filter-group" style={{ marginTop: '20px' }}>
                   <label className="filter-label">Availability</label>
                   <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
                       <input 
                         type="checkbox" 
                         className="filter-checkbox-input"
@@ -982,7 +982,7 @@ function MenuList({ categories, setCategories }) {
                       />
                       Breakfast
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
                       <input 
                         type="checkbox" 
                         className="filter-checkbox-input"
@@ -991,7 +991,7 @@ function MenuList({ categories, setCategories }) {
                       />
                       Dinner
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
                       <input 
                         type="checkbox" 
                         className="filter-checkbox-input"
@@ -1007,7 +1007,7 @@ function MenuList({ categories, setCategories }) {
                 <div className="filter-group" style={{ marginTop: '20px' }}>
                   <label className="filter-label">Dish type</label>
                   <div style={{ display: 'flex', gap: '20px', marginTop: '8px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
                       <input 
                         type="radio" 
                         name="dishType"
@@ -1017,7 +1017,7 @@ function MenuList({ categories, setCategories }) {
                       />
                       Veg
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
                       <input 
                         type="radio" 
                         name="dishType"
@@ -1027,7 +1027,7 @@ function MenuList({ categories, setCategories }) {
                       />
                       Non Veg
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '500', color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
                       <input 
                         type="radio" 
                         name="dishType"

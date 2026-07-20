@@ -311,9 +311,9 @@ const Register = ({ onRegister }) => {
 
         {step === 2 && (
           <form className="register-card__right" onSubmit={handleVerifyOTP}>
-            <h3 style={{ marginBottom: '8px', color: '#1e293b', fontSize: '20px' }}>Verify Your Email</h3>
-            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px' }}>
-              We sent a 6-digit code to <br/><span style={{ color: '#f97316', fontWeight: 600 }}>{email}</span>
+            <h3 style={{ marginBottom: '8px', color: '#1e293b', fontSize: 'var(--section-subtitle-size)' }}>Verify Your Email</h3>
+            <p style={{ color: '#64748b', fontSize: 'var(--body-small-size)', marginBottom: '24px' }}>
+              We sent a 6-digit code to <br/><span style={{ color: '#f97316', fontWeight: 'var(--weight-semibold)' }}>{email}</span>
             </p>
 
             {error && <div className="otp-error-message" style={{ width: '100%' }}>{error}</div>}
@@ -330,7 +330,7 @@ const Register = ({ onRegister }) => {
                   onChange={handleOnChange}
                   onKeyDown={(e) => handleOnKeyDown(e, index)}
                   onFocus={() => setActiveOTPIndex(index)}
-                  style={{ width: '40px', height: '48px', fontSize: '20px' }} // Slightly smaller to fit side column
+                  style={{ width: '40px', height: '48px', fontSize: 'var(--section-subtitle-size)' }} // Slightly smaller to fit side column
                 />
               ))}
             </div>
@@ -354,7 +354,7 @@ const Register = ({ onRegister }) => {
                   border: 'none',
                   color: '#7c7c7c',
                   marginLeft: '16px',
-                  fontSize: '13px',
+                  fontSize: 'var(--label-size)',
                   cursor: 'pointer',
                   fontFamily: "'Inter', sans-serif"
                 }}
@@ -449,7 +449,7 @@ const Register = ({ onRegister }) => {
                   border: 'none',
                   color: '#7c7c7c',
                   marginLeft: '16px',
-                  fontSize: '13px',
+                  fontSize: 'var(--label-size)',
                   cursor: 'pointer',
                   fontFamily: "'Inter', sans-serif"
                 }}

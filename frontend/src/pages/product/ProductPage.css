@@ -29,8 +29,8 @@
 
 .product-hero__title {
   font-family: 'Poppins', sans-serif;
-  font-size: 42px;
-  font-weight: 700;
+  font-size: var(--page-title-size);
+  font-weight: var(--weight-bold);
   color: #1f2937;
   line-height: 1.25;
   margin-bottom: 24px;
@@ -41,7 +41,7 @@
 }
 
 .product-hero__desc {
-  font-size: 18px;
+  font-size: var(--body-large-size);
   line-height: 1.6;
   color: #4b5563;
   margin: 0;
@@ -50,8 +50,8 @@
 /* Common Section Titles */
 .product-section-title {
   font-family: 'Poppins', sans-serif;
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--section-title-size);
+  font-weight: var(--weight-bold);
   color: #1f2937;
   margin-bottom: 32px;
   border-bottom: 2px solid #f3f4f6;
@@ -63,8 +63,8 @@
 }
 
 .product-section-subtitle {
-  font-size: 14px;
-  font-weight: 400;
+  font-size: var(--body-small-size);
+  font-weight: var(--weight-regular);
   color: #6b7280;
   font-style: italic;
 }
@@ -80,7 +80,7 @@
 }
 
 .product-features__list li {
-  font-size: 15px;
+  font-size: var(--menu-size);
   line-height: 1.6;
   color: #374151;
   background: #FAF2F0;
@@ -98,7 +98,7 @@
 
 .product-features__list li strong {
   color: #1f2937;
-  font-size: 16px;
+  font-size: var(--body-size);
   display: block;
   margin-bottom: 4px;
 }
@@ -136,21 +136,21 @@
   counter-increment: step-counter;
   content: "0" counter(step-counter);
   font-family: 'Poppins', sans-serif;
-  font-size: 32px;
-  font-weight: 800;
+  font-size: var(--page-subtitle-size);
+  font-weight: var(--weight-extrabold);
   color: rgba(240, 90, 40, 0.15);
   line-height: 1;
   margin-bottom: 8px;
 }
 
 .product-howitworks__steps li strong {
-  font-size: 16px;
+  font-size: var(--body-size);
   color: #1f2937;
 }
 
 .product-howitworks__steps li p, 
 .product-howitworks__steps li {
-  font-size: 14px;
+  font-size: var(--body-small-size);
   line-height: 1.5;
   color: #4b5563;
 }
@@ -177,10 +177,10 @@
 
 .product-testimonials__quote {
   font-family: 'Poppins', sans-serif;
-  font-size: 20px;
+  font-size: var(--section-subtitle-size);
   line-height: 1.6;
   font-style: italic;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   margin: 0;
   max-width: 800px;
   margin: 0 auto;
@@ -204,14 +204,14 @@
 }
 
 .product-faq__question {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--body-size);
+  font-weight: var(--weight-semibold);
   color: #1f2937;
   margin: 0 0 8px;
 }
 
 .product-faq__answer {
-  font-size: 14px;
+  font-size: var(--body-small-size);
   line-height: 1.6;
   color: #4b5563;
   margin: 0;
@@ -226,8 +226,8 @@
 
 .product-cta__title {
   font-family: 'Poppins', sans-serif;
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--section-title-size);
+  font-weight: var(--weight-bold);
   color: #1f2937;
   margin: 0 0 24px;
 }
@@ -237,8 +237,8 @@
   padding: 16px 36px;
   background: #f05a28;
   color: #ffffff;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--body-size);
+  font-weight: var(--weight-semibold);
   border-radius: 8px;
   text-decoration: none;
   transition: all 0.3s ease;
@@ -259,7 +259,7 @@
   }
 
   .product-hero__title {
-    font-size: 32px;
+    font-size: var(--page-subtitle-size);
   }
 
   .product-howitworks__steps {
@@ -272,6 +272,6 @@
   }
 
   .product-testimonials__quote {
-    font-size: 16px;
+    font-size: var(--body-size);
   }
 }
