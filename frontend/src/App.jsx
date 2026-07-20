@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { API_URL } from './config';
-import './App.css';
 import logoIcon from './assets/icons/Frame 123.svg';
 
 // SVG assets import
@@ -245,34 +244,11 @@ function App() {
   // Sidebar state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => window.innerWidth <= 768);
 
-  // Initial Menu Categories & Items (Shared globally for stats + menu list)
+  // Shared Data State
   const [categories, setCategories] = useState([]);
-
-  useEffect(() => {
-    if (!currentUser) {
-      setCategories([]);
-      return;
-    }
-
-    const fetchCategories = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_URL}/api/menu/categories`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setCategories(data.categories);
-        }
-      } catch (err) {
-        console.error('Failed to fetch menu categories:', err);
-      }
-    };
-
-    fetchCategories();
-  }, [currentUser]);
+  const [offers, setOffers] = useState([]);
+  const [scanCount, setScanCount] = useState(0);
+  const [isDataLoading, setIsDataLoading] = useState(false);
 
   // Shared Settings state
   const [restaurantName, setRestaurantName] = useState('thevingo.com');
@@ -297,33 +273,46 @@ function App() {
     }
   }, [currentUser]);
 
-  // Shared Offers state
-  const [offers, setOffers] = useState([]);
-
   useEffect(() => {
     if (!currentUser) {
+      setCategories([]);
       setOffers([]);
+      setScanCount(0);
       return;
     }
 
-    const fetchOffers = async () => {
+    const fetchAllData = async () => {
+      setIsDataLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_URL}/api/offers`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setOffers(data.offers);
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        const [catRes, offRes, statsRes] = await Promise.all([
+          fetch(`${API_URL}/api/menu/categories`, { headers }),
+          fetch(`${API_URL}/api/offers`, { headers }),
+          fetch(`${API_URL}/api/auth/dashboard`, { headers })
+        ]);
+
+        if (catRes.ok) {
+          const data = await catRes.json();
+          setCategories(data.categories || []);
+        }
+        if (offRes.ok) {
+          const data = await offRes.json();
+          setOffers(data.offers || []);
+        }
+        if (statsRes.ok) {
+          const data = await statsRes.json();
+          setScanCount(data.stats?.scanCount || 0);
         }
       } catch (err) {
-        console.error('Failed to fetch offers:', err);
+        console.error('Failed to fetch data in parallel:', err);
+      } finally {
+        setIsDataLoading(false);
       }
     };
 
-    fetchOffers();
+    fetchAllData();
   }, [currentUser]);
 
   return (
@@ -417,7 +406,7 @@ function App() {
           </PrivateRoute>
         }
       >
-        <Route index element={<Dashboard categories={categories} offers={offers} />} />
+        <Route index element={<Dashboard categories={categories} offers={offers} scanCount={scanCount} isDataLoading={isDataLoading} />} />
         <Route path="kitchen-menu" element={<MenuList categories={categories} setCategories={setCategories} />} />
         <Route path="offers" element={<Offers offers={offers} setOffers={setOffers} />} />
         <Route path="distribution" element={<Distribution restaurantName={restaurantName} setRestaurantName={setRestaurantName} tagline={tagline} setTagline={setTagline} currentUser={currentUser} />} />

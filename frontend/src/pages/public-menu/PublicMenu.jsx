@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { API_URL } from '../../config';
+import { API_URL, DEFAULT_DISH_IMAGE } from '../../config';
 import catFilterIcon from '../../assets/icons/Catagory Filter.svg';
 import filterIcon from '../../assets/icons/filterIcon.svg';
 import './PublicMenu.css';
@@ -209,7 +209,7 @@ const PublicMenu = () => {
                         <div className="public-food-card-body">
                           <div className="public-food-img-wrapper">
                             <img 
-                              src={item.image || 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=300&auto=format&fit=crop&q=80'} 
+                              src={item.image || DEFAULT_DISH_IMAGE} 
                               alt={item.name} 
                               className="public-food-img" 
                             />
@@ -289,7 +289,7 @@ const PublicMenu = () => {
         <div className="public-filter-modal-overlay" onClick={() => setShowFilterModal(false)}>
           <div className="public-filter-modal" onClick={(e) => e.stopPropagation()}>
             <div className="public-filter-modal-header" style={{ backgroundColor: '#F6F6F6', padding: '16px 20px', borderBottom: '1px solid #e2e8f0' }}>
-              <h4 style={{ margin: 0, fontSize: 'var(--body-size)', fontWeight: 'var(--weight-bold)', color: '#111827' }}>Filter</h4>
+              <h4 style={{ margin: 0, fontSize: 'var(--body-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)' }}>Filter</h4>
             </div>
             
             <form onSubmit={(e) => {
@@ -301,9 +301,9 @@ const PublicMenu = () => {
               
               {/* Availability Section */}
               <div className="filter-group">
-                <label className="filter-label" style={{ display: 'block', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-bold)', color: '#111827', marginBottom: '8px' }}>Availability</label>
+                <label className="filter-label" style={{ display: 'block', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)', marginBottom: '8px' }}>Availability</label>
                 <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
                     <input 
                       type="checkbox" 
                       className="filter-checkbox-input"
@@ -312,7 +312,7 @@ const PublicMenu = () => {
                     />
                     Breakfast
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
                     <input 
                       type="checkbox" 
                       className="filter-checkbox-input"
@@ -321,7 +321,7 @@ const PublicMenu = () => {
                     />
                     Dinner
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
                     <input 
                       type="checkbox" 
                       className="filter-checkbox-input"
@@ -335,9 +335,9 @@ const PublicMenu = () => {
 
               {/* Dish Type Section */}
               <div className="filter-group" style={{ marginTop: '20px' }}>
-                <label className="filter-label" style={{ display: 'block', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-bold)', color: '#111827', marginBottom: '8px' }}>Dish type</label>
+                <label className="filter-label" style={{ display: 'block', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)', marginBottom: '8px' }}>Dish type</label>
                 <div style={{ display: 'flex', gap: '20px', marginTop: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
                     <input 
                       type="radio" 
                       name="publicDishType"
@@ -347,7 +347,7 @@ const PublicMenu = () => {
                     />
                     Veg
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
                     <input 
                       type="radio" 
                       name="publicDishType"
@@ -357,7 +357,7 @@ const PublicMenu = () => {
                     />
                     Non Veg
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
                     <input 
                       type="radio" 
                       name="publicDishType"

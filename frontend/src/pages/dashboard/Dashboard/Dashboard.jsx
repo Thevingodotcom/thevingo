@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { API_URL } from '../../../config';
 
 // Custom inline SVG icons for dashboard circles
@@ -38,41 +37,15 @@ const ChevronIcon = () => (
   </svg>
 );
 
-function Dashboard({ categories, offers }) {
-  const [stats, setStats] = useState({
-    activeOffers: 0,
-    scanCount: 0,
-    dishCount: 0,
-    categoryCount: 0
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_URL}/api/auth/dashboard`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setStats(data.stats);
-        }
-      } catch (err) {
-        console.error('Failed to fetch dashboard stats:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
+function Dashboard({ categories, offers, scanCount, isDataLoading }) {
+  // Compute stats synchronously from memory - completely eliminates loading delays when switching tabs
+  const activeOffers = offers ? offers.filter(o => o.isActive || o.status === 'active').length : 0;
+  const categoryCount = categories ? categories.length : 0;
+  const dishCount = categories ? categories.reduce((total, cat) => total + (cat.items?.length || 0), 0) : 0;
 
   return (
     <div className="dashboard-page-container">
-      <h2 style={{ fontSize: 'var(--section-subtitle-size)', fontWeight: 'var(--weight-bold)', color: '#111827', margin: '0 0 24px 0' }}>Dashboard</h2>
+      <h2 style={{ fontSize: 'var(--section-subtitle-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)', margin: '0 0 24px 0' }}>Dashboard</h2>
 
       {/* Stats Cards Grid Layout */}
       <div className="dash-stats-grid">
@@ -83,7 +56,7 @@ function Dashboard({ categories, offers }) {
               <PercentBadgeIcon />
             </div>
             <div className="dash-card-text">
-              <span className="dash-card-count">{loading ? '...' : stats.activeOffers}</span>
+              <span className="dash-card-count">{isDataLoading ? '...' : activeOffers}</span>
               <span className="dash-card-label">Active offer</span>
             </div>
           </div>
@@ -99,7 +72,7 @@ function Dashboard({ categories, offers }) {
               <QRBadgeIcon />
             </div>
             <div className="dash-card-text">
-              <span className="dash-card-count">{loading ? '...' : stats.scanCount}</span>
+              <span className="dash-card-count">{isDataLoading ? '...' : scanCount}</span>
               <span className="dash-card-label">Total Scan</span>
             </div>
           </div>
@@ -115,7 +88,7 @@ function Dashboard({ categories, offers }) {
               <DishBadgeIcon />
             </div>
             <div className="dash-card-text">
-              <span className="dash-card-count">{loading ? '...' : stats.dishCount}</span>
+              <span className="dash-card-count">{isDataLoading ? '...' : dishCount}</span>
               <span className="dash-card-label">Dish</span>
             </div>
           </div>
@@ -131,7 +104,7 @@ function Dashboard({ categories, offers }) {
               <CategoryBadgeIcon />
             </div>
             <div className="dash-card-text">
-              <span className="dash-card-count">{loading ? '...' : stats.categoryCount}</span>
+              <span className="dash-card-count">{isDataLoading ? '...' : categoryCount}</span>
               <span className="dash-card-label">Category</span>
             </div>
           </div>

@@ -4,8 +4,8 @@
   top: 0;
   z-index: 100;
   width: 100%;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--bg-white);
+  border-bottom: 1px solid var(--border);
 }
 
 .landing-header__inner {
@@ -55,7 +55,7 @@
   font-family: 'Inter', sans-serif;
   font-size: var(--label-size);
   font-weight: var(--weight-medium);
-  color: #1f2937;
+  color: var(--text-dark);
   text-decoration: none;
   transition: all 0.2s ease;
   letter-spacing: 0.01em;
@@ -109,25 +109,25 @@
 }
 
 .landing-header__btn--outline {
-  color: #1f2937;
+  color: var(--text-dark);
   background-color: transparent;
-  border: 1.5px solid #1f2937;
+  border: 1.5px solid var(--text-dark);
 }
 
 .landing-header__btn--outline:hover {
   background-color: #f3f4f6;
-  border-color: #111827;
+  border-color: var(--text-dark);
 }
 
 .landing-header__btn--primary {
-  color: #ffffff;
+  color: var(--bg-white);
   background-color: #EF5C43;
   border: 1.5px solid #EF5C43;
 }
 
 .landing-header__btn--primary:hover {
-  background-color: #d8481b;
-  border-color: #d8481b;
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 /* ===== Responsive Styles & Hamburger ===== */
@@ -146,7 +146,7 @@
   display: block;
   width: 22px;
   height: 2px;
-  background-color: #1f2937;
+  background-color: var(--text-dark);
   transition: all 0.3s ease;
 }
 
@@ -169,8 +169,8 @@
   top: 56px;
   left: 0;
   right: 0;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--bg-white);
+  border-bottom: 1px solid var(--border);
   padding: 20px 24px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   z-index: 105;
@@ -202,7 +202,7 @@
   font-family: 'Inter', sans-serif;
   font-size: var(--body-small-size);
   font-weight: var(--weight-medium);
-  color: #1f2937;
+  color: var(--text-dark);
   text-decoration: none;
   display: block;
   width: 100%;
@@ -235,13 +235,13 @@
 }
 
 .landing-header__mobile-btn.outline {
-  color: #1f2937;
-  border: 1.5px solid #1f2937;
+  color: var(--text-dark);
+  border: 1.5px solid var(--text-dark);
   background-color: transparent;
 }
 
 .landing-header__mobile-btn.primary {
-  color: #ffffff;
+  color: var(--bg-white);
   background-color: #EF5C43;
   border: 1.5px solid #EF5C43;
 }

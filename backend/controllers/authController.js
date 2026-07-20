@@ -428,7 +428,7 @@ exports.register = async (req, res) => {
                           <!-- Right Side: Contact Info -->
                           <td width="50%" align="right" valign="middle" style="color: #ffffff; font-size: 15px; line-height: 1.8;">
                             <a href="mailto:sales@thevingo.com" style="color: #ffffff; text-decoration: none;">sales@thevingo.com</a><br/>
-                            <a href="https://www.thevingo.com" style="color: #ffffff; text-decoration: none;">www.thevingo.com</a>
+                            <a href="${process.env.FRONTEND_URL || 'https://www.thevingo.com'}" style="color: #ffffff; text-decoration: none;">${(process.env.FRONTEND_URL || 'https://www.thevingo.com').replace('https://', '').replace('http://', '')}</a>
                           </td>
                         </tr>
                       </table>

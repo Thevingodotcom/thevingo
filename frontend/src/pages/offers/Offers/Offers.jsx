@@ -35,9 +35,9 @@ const PercentTagBadge = () => (
   <div className="percent-tag-badge-wrapper">
     <svg width="44" height="44" viewBox="0 0 48 48" fill="none" style={{ transform: 'rotate(-5deg)' }}>
       <path d="M22 6 C18 6 12 12 18 18" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-      <path d="M15 15 L28 15 L38 25 L25 38 L15 28 Z" fill="#e11d48" stroke="#fff" strokeWidth="1.2" />
-      <circle cx="19" cy="19" r="2.2" fill="#fff" />
-      <text x="22" y="30" fill="#fff" fontSize="12" fontWeight="900" fontFamily="sans-serif">%</text>
+      <path d="M15 15 L28 15 L38 25 L25 38 L15 28 Z" fill="#e11d48" stroke="var(--bg-white)" strokeWidth="1.2" />
+      <circle cx="19" cy="19" r="2.2" fill="var(--bg-white)" />
+      <text x="22" y="30" fill="var(--bg-white)" fontSize="12" fontWeight="900" fontFamily="sans-serif">%</text>
     </svg>
   </div>
 );
@@ -204,7 +204,7 @@ function Offers({ offers, setOffers }) {
 
   return (
     <div className="offers-page-container" style={{ position: 'relative', minHeight: '80vh', paddingBottom: '80px' }}>
-      <h2 style={{ fontSize: 'var(--section-subtitle-size)', fontWeight: 'var(--weight-bold)', color: '#111827', margin: '0 0 24px 0' }}>Offer</h2>
+      <h2 style={{ fontSize: 'var(--section-subtitle-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)', margin: '0 0 24px 0' }}>Offer</h2>
 
       <div className="offers-list">
         {offers.length > 0 ? (
@@ -272,9 +272,9 @@ function Offers({ offers, setOffers }) {
             </div>
           ))
         ) : (
-          <div className="empty-state" style={{ background: '#fff', borderRadius: '8px', padding: '40px', textAlign: 'center', border: '1px solid #e5e7eb' }}>
+          <div className="empty-state" style={{ background: 'var(--bg-white)', borderRadius: '8px', padding: '40px', textAlign: 'center', border: '1px solid var(--border)' }}>
             <h4 style={{ margin: '0 0 4px 0', fontSize: 'var(--menu-size)', fontWeight: 'var(--weight-semibold)' }}>No offers active</h4>
-            <p style={{ margin: 0, fontSize: 'var(--label-size)', color: '#6b7280' }}>Click the plus button to add a new marketing promotion.</p>
+            <p style={{ margin: 0, fontSize: 'var(--label-size)', color: 'var(--text-muted)' }}>Click the plus button to add a new marketing promotion.</p>
           </div>
         )}
       </div>
@@ -354,7 +354,7 @@ function Offers({ offers, setOffers }) {
                       required 
                       style={{ padding: '8px 10px', fontSize: 'var(--label-size)' }}
                     />
-                    <span style={{ fontSize: 'var(--label-size)', color: '#6b7280' }}>to</span>
+                    <span style={{ fontSize: 'var(--label-size)', color: 'var(--text-muted)' }}>to</span>
                     <input 
                       type="date" 
                       className="form-input" 
