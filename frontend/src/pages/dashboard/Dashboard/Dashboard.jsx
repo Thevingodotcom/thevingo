@@ -33,7 +33,7 @@ const CategoryBadgeIcon = () => (
 
 const ChevronIcon = () => (
   <svg width="6" height="10" viewBox="0 0 6 10" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M1 9L5 5L1 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M1 9L5 5L1 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 
@@ -45,7 +45,7 @@ function Dashboard({ categories, offers, scanCount, isDataLoading }) {
 
   return (
     <div className="dashboard-page-container">
-      <h2 style={{ fontSize: 'var(--section-subtitle-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)', margin: '0 0 24px 0' }}>Dashboard</h2>
+      <h2 className="landing_heading2" style={{ color: 'var(--text-dark)', margin: '0 0 24px 0' }}>Dashboard</h2>
 
       {/* Stats Cards Grid Layout */}
       <div className="dash-stats-grid">
@@ -56,8 +56,8 @@ function Dashboard({ categories, offers, scanCount, isDataLoading }) {
               <PercentBadgeIcon />
             </div>
             <div className="dash-card-text">
-              <span className="dash-card-count">{isDataLoading ? '...' : activeOffers}</span>
-              <span className="dash-card-label">Active offer</span>
+              <span className="dash-card-count landing_body2">{isDataLoading ? '...' : activeOffers}</span>
+              <span className="dash-card-label landing_body">Active offer</span>
             </div>
           </div>
           <div className="dash-card-right">
@@ -72,8 +72,8 @@ function Dashboard({ categories, offers, scanCount, isDataLoading }) {
               <QRBadgeIcon />
             </div>
             <div className="dash-card-text">
-              <span className="dash-card-count">{isDataLoading ? '...' : scanCount}</span>
-              <span className="dash-card-label">Total Scan</span>
+              <span className="dash-card-count landing_body2">{isDataLoading ? '...' : scanCount}</span>
+              <span className="dash-card-label landing_body">Total Scan</span>
             </div>
           </div>
           <div className="dash-card-right">
@@ -88,8 +88,8 @@ function Dashboard({ categories, offers, scanCount, isDataLoading }) {
               <DishBadgeIcon />
             </div>
             <div className="dash-card-text">
-              <span className="dash-card-count">{isDataLoading ? '...' : dishCount}</span>
-              <span className="dash-card-label">Dish</span>
+              <span className="dash-card-count landing_body2">{isDataLoading ? '...' : dishCount}</span>
+              <span className="dash-card-label landing_body">Dish</span>
             </div>
           </div>
           <div className="dash-card-right">
@@ -104,8 +104,8 @@ function Dashboard({ categories, offers, scanCount, isDataLoading }) {
               <CategoryBadgeIcon />
             </div>
             <div className="dash-card-text">
-              <span className="dash-card-count">{isDataLoading ? '...' : categoryCount}</span>
-              <span className="dash-card-label">Category</span>
+              <span className="dash-card-count landing_body2">{isDataLoading ? '...' : categoryCount}</span>
+              <span className="dash-card-label landing_body">Category</span>
             </div>
           </div>
           <div className="dash-card-right">

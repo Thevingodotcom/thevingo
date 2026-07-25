@@ -25,9 +25,11 @@ import OTPVerification from './pages/auth/OTPVerification/OTPVerification';
 import ResetPassword from './pages/auth/ResetPassword/ResetPassword';
 import ForgotPassword from './pages/auth/ForgotPassword/ForgotPassword';
 
-// Route guards
-import PrivateRoute from './routes/PrivateRoute';
-import PublicRoute from './routes/PublicRoute';
+// Application Architecture & Route Guards
+import Bootstrap from './app/Bootstrap';
+import { useAuth } from './app/AuthContext';
+import { ProtectedRoute as PrivateRoute, PublicRoute } from './app/RouteGuard';
+import { haptics } from './utils/haptics';
 
 // Custom Speedometer/Dashboard SVG Icon
 const DashboardIcon = () => (
@@ -118,7 +120,10 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
           <div className="user-avatar">
             {getInitials(currentUser ? currentUser.username : 'Krishna Ram')}
           </div>
-          <button className="navbar-logout-btn" onClick={handleLogout}>
+          <button className="navbar-logout-btn" onClick={() => {
+            haptics.warning();
+            handleLogout();
+          }}>
             Logout
           </button>
         </div>
@@ -130,7 +135,10 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
         <aside ref={sidebarRef} className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
           <div
             className={`sidebar-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => navigate('/dashboard')}
+            onClick={() => {
+              haptics.selection();
+              navigate('/dashboard');
+            }}
           >
             <div className="sidebar-icon">
               <DashboardIcon />
@@ -140,7 +148,10 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
 
           <div
             className={`sidebar-item ${activeTab === 'kitchen' ? 'active' : ''}`}
-            onClick={() => navigate('/dashboard/kitchen-menu')}
+            onClick={() => {
+              haptics.selection();
+              navigate('/dashboard/kitchen-menu');
+            }}
           >
             <div className="sidebar-icon">
               <img src={kitchenMenuIcon} alt="Kitchen menu" style={{ width: '18px', height: '18px' }} />
@@ -150,7 +161,10 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
 
           <div
             className={`sidebar-item ${activeTab === 'offers' ? 'active' : ''}`}
-            onClick={() => navigate('/dashboard/offers')}
+            onClick={() => {
+              haptics.selection();
+              navigate('/dashboard/offers');
+            }}
           >
             <div className="sidebar-icon">
               <img src={offerIcon} alt="Offers" style={{ width: '18px', height: '18px' }} />
@@ -160,7 +174,10 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
 
           <div
             className={`sidebar-item ${activeTab === 'distribution' ? 'active' : ''}`}
-            onClick={() => navigate('/dashboard/distribution')}
+            onClick={() => {
+              haptics.selection();
+              navigate('/dashboard/distribution');
+            }}
           >
             <div className="sidebar-icon">
               <img src={distributionIcon} alt="Distribution" style={{ width: '18px', height: '18px' }} />
@@ -170,7 +187,10 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
 
           <div
             className={`sidebar-item ${activeTab === 'setting' ? 'active' : ''}`}
-            onClick={() => navigate('/dashboard/settings')}
+            onClick={() => {
+              haptics.selection();
+              navigate('/dashboard/settings');
+            }}
           >
             <div className="sidebar-icon">
               <img src={settingIcon} alt="Setting" style={{ width: '18px', height: '18px' }} />
@@ -201,16 +221,7 @@ function ScrollToTop() {
 
 function App() {
   const navigate = useNavigate();
-
-  // Logged-in User State
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const { currentUser, setCurrentUser, logout } = useAuth();
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -222,23 +233,8 @@ function App() {
   };
 
   const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await fetch(`${API_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      }
-    } catch (e) {
-      console.error('Logout error:', e);
-    }
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setCurrentUser(null);
-    navigate('/');
+    await logout();
+    navigate('/login', { replace: true });
   };
 
   // Sidebar state
@@ -316,7 +312,7 @@ function App() {
   }, [currentUser]);
 
   return (
-    <>
+    <Bootstrap>
       <ScrollToTop />
       <Routes>
       {/* Landing Page */}
@@ -416,7 +412,7 @@ function App() {
       {/* Fallback redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-    </>
+    </Bootstrap>
   );
 }
 

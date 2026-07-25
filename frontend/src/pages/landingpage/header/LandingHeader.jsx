@@ -31,24 +31,24 @@ const LandingHeader = () => {
         <nav className="landing-header__nav">
           <ul className="landing-header__nav-list">
             <li className="landing-header__nav-item">
-              <NavLink to="/" end className="landing-header__nav-link">Home</NavLink>
+              <NavLink to="/" end className="landing-header__nav-link landing_anchor">Home</NavLink>
             </li>
             <li className="landing-header__nav-item">
-              <NavLink to="/product" className="landing-header__nav-link">Product</NavLink>
+              <NavLink to="/product" className="landing-header__nav-link landing_anchor">Product</NavLink>
             </li>
             <li className="landing-header__nav-item">
-              <NavLink to="/pricing" className="landing-header__nav-link">Pricing</NavLink>
+              <NavLink to="/pricing" className="landing-header__nav-link landing_anchor">Pricing</NavLink>
             </li>
             <li className="landing-header__nav-item">
-              <NavLink to="/login" className="landing-header__nav-link">Login</NavLink>
+              <NavLink to="/login" className="landing-header__nav-link landing_anchor">Login</NavLink>
             </li>
           </ul>
 
           <div className="landing-header__actions">
-            <a href="#contact" className="landing-header__btn landing-header__btn--outline">
+            <a href="#contact" className="landing-header__btn landing-header__btn--outline landing_button">
               Contact sales
             </a>
-            <Link to="/pricing" className="landing-header__btn landing-header__btn--primary">
+            <Link to="/pricing" className="landing-header__btn landing-header__btn--primary landing_button">
               Get started for free
             </Link>
           </div>
@@ -60,25 +60,25 @@ const LandingHeader = () => {
         <div className="landing-header__mobile-menu">
           <ul className="landing-header__mobile-list">
             <li>
-              <NavLink to="/" end className="landing-header__mobile-link" onClick={() => setIsMobileMenuOpen(false)}>Home</NavLink>
+              <NavLink to="/" end className="landing-header__mobile-link landing_anchor" onClick={() => setIsMobileMenuOpen(false)}>Home</NavLink>
             </li>
             <li>
-              <NavLink to="/product" className="landing-header__mobile-link" onClick={() => setIsMobileMenuOpen(false)}>Product</NavLink>
+              <NavLink to="/product" className="landing-header__mobile-link landing_anchor" onClick={() => setIsMobileMenuOpen(false)}>Product</NavLink>
             </li>
             <li>
-              <NavLink to="/pricing" className="landing-header__mobile-link" onClick={() => setIsMobileMenuOpen(false)}>Pricing</NavLink>
+              <NavLink to="/pricing" className="landing-header__mobile-link landing_anchor" onClick={() => setIsMobileMenuOpen(false)}>Pricing</NavLink>
             </li>
             <li>
-              <NavLink to="/login" className="landing-header__mobile-link" onClick={() => setIsMobileMenuOpen(false)}>Login</NavLink>
+              <NavLink to="/login" className="landing-header__mobile-link landing_anchor" onClick={() => setIsMobileMenuOpen(false)}>Login</NavLink>
             </li>
             <li className="mobile-actions-divider"></li>
             <li style={{ width: '100%' }}>
-              <a href="#contact" className="landing-header__mobile-btn outline" onClick={() => setIsMobileMenuOpen(false)}>
+              <a href="#contact" className="landing-header__mobile-btn outline landing_button" onClick={() => setIsMobileMenuOpen(false)}>
                 Contact sales
               </a>
             </li>
             <li style={{ width: '100%', marginTop: '10px' }}>
-              <Link to="/pricing" className="landing-header__mobile-btn primary" onClick={() => setIsMobileMenuOpen(false)}>
+              <Link to="/pricing" className="landing-header__mobile-btn primary landing_button" onClick={() => setIsMobileMenuOpen(false)}>
                 Get started for free
               </Link>
             </li>

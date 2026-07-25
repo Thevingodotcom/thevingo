@@ -11,7 +11,8 @@ function Distribution({ restaurantName, setRestaurantName, tagline, setTagline }
   };
 
   const slug = getSlug(restaurantName);
-  const menuUrl = `${APP_URL}/menu/${slug}`;
+  const baseUrl = APP_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+  const menuUrl = `${baseUrl.replace(/\/$/, '')}/menu/${slug}`;
 
   // Link copying
   const handleCopyLink = () => {
@@ -91,17 +92,17 @@ function Distribution({ restaurantName, setRestaurantName, tagline, setTagline }
 
   return (
     <div className="distribution-page-container">
-      <h2 style={{ fontSize: 'var(--section-subtitle-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)', margin: '0 0 32px 0' }}>Distribution</h2>
+      <h2 className="landing_heading2" style={{ color: 'var(--text-dark)', margin: '0 0 32px 0' }}>Distribution</h2>
 
       <div className="dist-split-layout">
         {/* Left Input Fields Column */}
         <div className="dist-inputs-col">
           {/* Restaurant Name */}
           <div className="dist-input-row">
-            <span className="dist-input-label">Restaurant name</span>
+            <span className="dist-input-label landing_body">Restaurant name</span>
             <input 
               type="text" 
-              className="dist-input-field" 
+              className="dist-input-field landing_placeholder" 
               value={restaurantName}
               readOnly
             />
@@ -109,10 +110,10 @@ function Distribution({ restaurantName, setRestaurantName, tagline, setTagline }
 
           {/* Tagline */}
           <div className="dist-input-row">
-            <span className="dist-input-label">Tagline</span>
+            <span className="dist-input-label landing_body">Tagline</span>
             <input 
               type="text" 
-              className="dist-input-field" 
+              className="dist-input-field landing_placeholder" 
               value={tagline}
               readOnly
             />
@@ -120,10 +121,10 @@ function Distribution({ restaurantName, setRestaurantName, tagline, setTagline }
 
           {/* Action buttons */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '32px', width: '130px' }}>
-            <button className="dist-action-btn primary" onClick={handleDownloadQR}>
+            <button className="dist-action-btn primary landing_button" onClick={handleDownloadQR}>
               Download QR
             </button>
-            <button className="dist-action-btn secondary" onClick={handleCopyLink}>
+            <button className="dist-action-btn secondary landing_button" onClick={handleCopyLink}>
               {isCopied ? 'Copied!' : 'Copy link'}
             </button>
           </div>
@@ -131,21 +132,21 @@ function Distribution({ restaurantName, setRestaurantName, tagline, setTagline }
 
         {/* Right Preview Column */}
         <div className="dist-preview-col">
-          <h3 className="dist-preview-title">Preview</h3>
+          <h3 className="dist-preview-title landing_heading2">Preview</h3>
 
           {/* Preview Tent Card */}
           <div className="dist-preview-card">
             <div className="dist-card-header">
-              <h4 className="dist-card-name">
+              <h4 className="dist-card-name landing_heading2">
                 {restaurantName.trim() ? restaurantName : 'RESTAURANT NAME'}
               </h4>
-              <p className="dist-card-tagline">
+              <p className="dist-card-tagline landing_body">
                 {tagline.trim() ? tagline : 'Tagline goes here'}
               </p>
             </div>
 
             <div className="dist-card-body">
-              <h5 className="dist-card-menu-title">MENU CARD</h5>
+              <h5 className="dist-card-menu-title landing_heading2">MENU CARD</h5>
               <div className="dist-card-qrcode-wrapper" style={{ display: 'flex', justifyContent: 'center', padding: '10px' }}>
                 <QRCodeCanvas 
                   id="qr-canvas"
@@ -156,10 +157,10 @@ function Distribution({ restaurantName, setRestaurantName, tagline, setTagline }
                   style={{ display: 'block' }}
                 />
               </div>
-              <p className="dist-card-scan-text">Scan the qr code for menu card</p>
+              <p className="dist-card-scan-text landing_body">Scan the qr code for menu card</p>
             </div>
 
-            <div className="dist-card-footer">
+            <div className="dist-card-footer landing_body">
               Powered by thevingo.com
             </div>
           </div>

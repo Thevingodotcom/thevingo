@@ -70,12 +70,12 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
 
   return (
     <div className="settings-page-container">
-      <h2 style={{ fontSize: 'var(--section-subtitle-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)', margin: '0 0 24px 0' }}>Setting</h2>
+      <h2 className="landing_heading2" style={{ color: 'var(--text-dark)', margin: '0 0 24px 0' }}>Setting</h2>
 
       {/* Card 1: Brand Customization */}
       <div className="settings-card" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 className="settings-card-title" style={{ margin: 0 }}>Brand Customization</h3>
+          <h3 className="settings-card-title landing_heading2" style={{ margin: 0 }}>Brand Customization</h3>
           <button 
             onClick={() => handleOpenModal('brand')} 
             style={{
@@ -92,20 +92,20 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
         </div>
         
         <div className="settings-row">
-          <span className="settings-label" style={{ minWidth: '180px' }}>Restaurant Name</span>
-          <span className="settings-value">{restaurantName || 'thevingo.com'}</span>
+          <span className="settings-label landing_body" style={{ minWidth: '180px' }}>Restaurant Name</span>
+          <span className="settings-value landing_body">{restaurantName || 'thevingo.com'}</span>
         </div>
 
         <div className="settings-row" style={{ marginTop: '12px' }}>
-          <span className="settings-label" style={{ minWidth: '180px' }}>Restaurant tagline</span>
-          <span className="settings-value">{tagline || 'Menu Card every restaurant need'}</span>
+          <span className="settings-label landing_body" style={{ minWidth: '180px' }}>Restaurant tagline</span>
+          <span className="settings-value landing_body">{tagline || 'Menu Card every restaurant need'}</span>
         </div>
       </div>
 
       {/* Card 2: Hotel details */}
       <div className="settings-card" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 className="settings-card-title" style={{ margin: 0 }}>Hotel details</h3>
+          <h3 className="settings-card-title landing_heading2" style={{ margin: 0 }}>Hotel details</h3>
           <button 
             onClick={() => handleOpenModal('hotel')} 
             style={{
@@ -122,25 +122,25 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
         </div>
         
         <div className="settings-row">
-          <span className="settings-label" style={{ minWidth: '180px' }}>Restaurant City</span>
-          <span className="settings-value">{hotelCity || 'Not set'}</span>
+          <span className="settings-label landing_body" style={{ minWidth: '180px' }}>Restaurant City</span>
+          <span className="settings-value landing_body">{hotelCity || 'Not set'}</span>
         </div>
 
         <div className="settings-row" style={{ marginTop: '12px' }}>
-          <span className="settings-label" style={{ minWidth: '180px' }}>Restaurant State</span>
-          <span className="settings-value">{hotelState || 'Not set'}</span>
+          <span className="settings-label landing_body" style={{ minWidth: '180px' }}>Restaurant State</span>
+          <span className="settings-value landing_body">{hotelState || 'Not set'}</span>
         </div>
 
         <div className="settings-row" style={{ marginTop: '12px' }}>
-          <span className="settings-label" style={{ minWidth: '180px' }}>Restaurant Address</span>
-          <span className="settings-value">{hotelAddress || 'Not set'}</span>
+          <span className="settings-label landing_body" style={{ minWidth: '180px' }}>Restaurant Address</span>
+          <span className="settings-value landing_body">{hotelAddress || 'Not set'}</span>
         </div>
       </div>
 
       {/* Card 3: User details */}
       <div className="settings-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 className="settings-card-title" style={{ margin: 0 }}>User details</h3>
+          <h3 className="settings-card-title landing_heading2" style={{ margin: 0 }}>User details</h3>
           <button 
             onClick={() => handleOpenModal('user')} 
             style={{
@@ -157,8 +157,8 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
         </div>
         
         <div className="settings-row">
-          <span className="settings-label" style={{ minWidth: '180px' }}>User name</span>
-          <span className="settings-value">{currentUser ? currentUser.username : 'Krishna Ram'}</span>
+          <span className="settings-label landing_body" style={{ minWidth: '180px' }}>User name</span>
+          <span className="settings-value landing_body">{currentUser ? currentUser.username : 'Krishna Ram'}</span>
         </div>
       </div>
 
@@ -167,7 +167,7 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-header">
-              <h3 className="modal-title">
+              <h3 className="modal-title landing_heading2">
                 {activeModal === 'brand' && 'Edit Brand Customization'}
                 {activeModal === 'hotel' && 'Edit Hotel details'}
                 {activeModal === 'user' && 'Edit User details'}
@@ -179,10 +179,10 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
               {activeModal === 'brand' && (
                 <>
                   <div className="form-group">
-                    <label className="form-label">Restaurant Name</label>
+                    <label className="form-label landing_body">Restaurant Name</label>
                     <input 
                       type="text" 
-                      className="form-input" 
+                      className="form-input landing_placeholder" 
                       placeholder="e.g. thevingo.com"
                       value={tempName}
                       onChange={(e) => setTempName(e.target.value)}
@@ -191,10 +191,10 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Restaurant tagline</label>
+                    <label className="form-label landing_body">Restaurant tagline</label>
                     <input 
                       type="text" 
-                      className="form-input" 
+                      className="form-input landing_placeholder" 
                       placeholder="e.g. Menu Card every restaurant need"
                       value={tempTagline}
                       onChange={(e) => setTempTagline(e.target.value)}
@@ -207,10 +207,10 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
               {activeModal === 'hotel' && (
                 <>
                   <div className="form-group">
-                    <label className="form-label">Restaurant City</label>
+                    <label className="form-label landing_body">Restaurant City</label>
                     <input 
                       type="text" 
-                      className="form-input" 
+                      className="form-input landing_placeholder" 
                       placeholder="e.g. Coimbatore"
                       value={tempCity}
                       onChange={(e) => setTempCity(e.target.value)}
@@ -219,10 +219,10 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Restaurant State</label>
+                    <label className="form-label landing_body">Restaurant State</label>
                     <input 
                       type="text" 
-                      className="form-input" 
+                      className="form-input landing_placeholder" 
                       placeholder="e.g. Tamilnadu"
                       value={tempState}
                       onChange={(e) => setTempState(e.target.value)}
@@ -231,10 +231,10 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Restaurant Address</label>
+                    <label className="form-label landing_body">Restaurant Address</label>
                     <input 
                       type="text" 
-                      className="form-input" 
+                      className="form-input landing_placeholder" 
                       placeholder="e.g. Coimbatore"
                       value={tempAddress}
                       onChange={(e) => setTempAddress(e.target.value)}
@@ -246,10 +246,10 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
 
               {activeModal === 'user' && (
                 <div className="form-group">
-                  <label className="form-label">User name</label>
+                  <label className="form-label landing_body">User name</label>
                   <input 
                     type="text" 
-                    className="form-input" 
+                    className="form-input landing_placeholder" 
                     placeholder="e.g. Kuppusamy"
                     value={tempUsername}
                     onChange={(e) => setTempUsername(e.target.value)}
@@ -259,8 +259,8 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
               )}
 
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setActiveModal(null)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Changes</button>
+                <button type="button" className="btn btn-secondary landing_button" onClick={() => setActiveModal(null)}>Cancel</button>
+                <button type="submit" className="btn btn-primary landing_button">Save Changes</button>
               </div>
             </form>
           </div>

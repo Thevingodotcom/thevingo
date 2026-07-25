@@ -72,21 +72,21 @@ const ResetPassword = () => {
       <div className="register-card">
         {/* Left Column (Headers) */}
         <div className="register-card__left">
-          <h2 className="register-card__title">Reset password</h2>
-          <p className="register-card__subtitle">
+          <h2 className="register-card__title landing_heading2">Reset password</h2>
+          <p className="register-card__subtitle landing_body">
             Change password of your vingo<br />account
           </p>
         </div>
 
         {/* Right Column (Form) */}
         <form className="register-card__right" onSubmit={handleSubmit}>
-          {error && <div className="register-error-msg">{error}</div>}
-          {success && <div className="register-error-msg" style={{ color: '#16a34a' }}>{success}</div>}
+          {error && <div className="register-error-msg landing_body">{error}</div>}
+          {success && <div className="register-error-msg landing_body" style={{ color: '#16a34a' }}>{success}</div>}
           
           <div className="register-form-group">
             <input
               type="password"
-              className="register-input"
+              className="register-input landing_placeholder"
               placeholder="Enter new password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -97,7 +97,7 @@ const ResetPassword = () => {
           <div className="register-form-group">
             <input
               type="password"
-              className="register-input"
+              className="register-input landing_placeholder"
               placeholder="Re-enter new password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -108,7 +108,7 @@ const ResetPassword = () => {
           <div className="register-actions-row">
             <button 
               type="submit" 
-              className="register-submit-btn"
+              className="register-submit-btn landing_button"
               disabled={loading}
             >
               {loading ? 'Resetting...' : 'Reset password'}

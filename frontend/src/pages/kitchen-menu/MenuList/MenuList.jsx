@@ -429,7 +429,7 @@ function MenuList({ categories, setCategories }) {
           <input
             type="text"
             placeholder="Search menu items..."
-            className="search-input"
+            className="search-input landing_placeholder"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -452,15 +452,12 @@ function MenuList({ categories, setCategories }) {
               setAppliedAvailability({ Breakfast: true, Lunch: true, Dinner: true });
               setAppliedDishType('all');
             }}
+            className="landing_anchor"
             style={{
               background: 'none',
               border: 'none',
               color: '#EF5C43',
-              fontWeight: 'var(--weight-bold)',
-              fontSize: 'var(--caption-size)',
-              cursor: 'pointer',
-              marginLeft: '8px',
-              fontFamily: "'Inter', sans-serif"
+              cursor: 'pointer'
             }}
           >
             Clear Filters ✕
@@ -473,7 +470,7 @@ function MenuList({ categories, setCategories }) {
           displayCategories.map(category => (
             <section key={category.id} className="category-section">
               <div className="category-header">
-                <h3 className="category-title">{category.name}</h3>
+                <h3 className="category-title landing_heading2">{category.name}</h3>
                 <div style={{ position: 'relative' }}>
                   <button 
                     className="category-options-btn"
@@ -488,7 +485,7 @@ function MenuList({ categories, setCategories }) {
                     <div className="category-dropdown-menu">
                       <button
                         type="button"
-                        className="category-dropdown-item"
+                        className="category-dropdown-item landing_body"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectionCategoryId(category.id);
@@ -500,7 +497,7 @@ function MenuList({ categories, setCategories }) {
                       </button>
                       <button
                         type="button"
-                        className="category-dropdown-item delete-option"
+                        className="category-dropdown-item delete-option landing_body"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteCategory(category.id, category.name);
@@ -541,14 +538,14 @@ function MenuList({ categories, setCategories }) {
                           <img src={item.image} alt={item.name} className="food-img" />
                         </div>
                         <div className="food-details">
-                          <h4 className="food-name">{item.name}</h4>
-                          <p className="food-price">{item.price} Rs</p>
+                          <h4 className="food-name landing_body">{item.name}</h4>
+                          <p className="food-price landing_body">{item.price} Rs</p>
 
                           <div className="veg-indicator">
                             <div className={`veg-box ${!item.isVeg ? 'non-veg' : ''}`}>
                               <div className={`veg-dot ${!item.isVeg ? 'non-veg' : ''}`}></div>
                             </div>
-                            <span className="veg-text">Veg</span>
+                            <span className="veg-text landing_body">Veg</span>
                           </div>
                         </div>
                       </div>
@@ -709,17 +706,17 @@ function MenuList({ categories, setCategories }) {
         <div className="modal-overlay">
           <div className="modal-content dish-modal-content">
             <div className="modal-header dish-modal-header">
-              <h3 className="modal-title dish-modal-title">Add new dish</h3>
+              <h3 className="modal-title dish-modal-title landing_heading2">Add new dish</h3>
             </div>
 
             <form onSubmit={handleAddItemSubmit} className="dish-modal-form">
               {/* Row 1: Dish name & Pricing */}
               <div className="dish-form-grid-row">
                 <div className="dish-form-group">
-                  <label className="dish-label">Dish name</label>
+                  <label className="dish-label landing_body">Dish name</label>
                   <input
                     type="text"
-                    className="dish-input"
+                    className="dish-input landing_placeholder"
                     placeholder="Enter dish name"
                     value={newItemName}
                     onChange={(e) => setNewItemName(e.target.value)}
@@ -728,19 +725,19 @@ function MenuList({ categories, setCategories }) {
                 </div>
 
                 <div className="dish-form-group">
-                  <label className="dish-label">Pricing</label>
+                  <label className="dish-label landing_body">Pricing</label>
                   <div className="pricing-input-wrapper">
                     <input
                       type="number"
-                      className="dish-input pricing-input"
+                      className="dish-input pricing-input landing_placeholder"
                       placeholder="0"
                       value={newItemPrice}
                       onChange={(e) => setNewItemPrice(e.target.value)}
                       required
                     />
-                    <span className="currency-symbol">₹</span>
+                    <span className="currency-symbol landing_body">₹</span>
                   </div>
-                  <span className="pricing-helper">You can change the currency symbol at the restaurant setting page</span>
+                  <span className="pricing-helper landing_body">You can change the currency symbol at the restaurant setting page</span>
                 </div>
               </div>
 

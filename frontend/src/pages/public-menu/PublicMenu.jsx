@@ -164,8 +164,8 @@ const PublicMenu = () => {
     <div className="public-menu-page">
       {/* Header Section */}
       <header className="public-menu-header">
-        <h1 className="public-menu-restaurant-name">{restaurantName || 'Restaurant Name'}</h1>
-        <p className="public-menu-tagline">{tagline || 'Tagline'}</p>
+        <h1 className="public-menu-restaurant-name landing_heading1">{restaurantName || 'Restaurant Name'}</h1>
+        <p className="public-menu-tagline landing_body2">{tagline || 'Tagline'}</p>
       </header>
 
       <main className="public-menu-main">
@@ -177,7 +177,7 @@ const PublicMenu = () => {
               placeholder="Search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="public-menu-search-input"
+              className="public-menu-search-input landing_placeholder"
             />
             <button className="public-menu-search-btn">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -200,7 +200,7 @@ const PublicMenu = () => {
           {filteredCategories.length > 0 ? (
             filteredCategories.map(category => (
               <section key={category.id} className="public-category-section">
-                <h3 className="public-category-title">{category.name}</h3>
+                <h3 className="public-category-title landing_heading2">{category.name}</h3>
                 
                 <div className="public-food-grid">
                   {category.items.length > 0 ? (
@@ -215,24 +215,24 @@ const PublicMenu = () => {
                             />
                           </div>
                           <div className="public-food-details">
-                            <h4 className="public-food-name">{item.name}</h4>
-                            <p className="public-food-price">{item.price} Rs</p>
+                            <h4 className="public-food-name landing_body">{item.name}</h4>
+                            <p className="public-food-price landing_body">{item.price} Rs</p>
 
                             <div className="public-veg-indicator">
                               <div className={`public-veg-box ${!item.isVeg ? 'non-veg' : ''}`}>
                                 <div className={`public-veg-dot ${!item.isVeg ? 'non-veg' : ''}`}></div>
                               </div>
-                              <span className="public-veg-text">{item.isVeg ? 'Veg' : 'Non Veg'}</span>
+                              <span className="public-veg-text landing_body">{item.isVeg ? 'Veg' : 'Non Veg'}</span>
                             </div>
                           </div>
                         </div>
-                        <div className="public-food-card-footer">
+                        <div className="public-food-card-footer landing_body">
                           {getAvailabilityText(item) || 'Breakfast/Lunch/Dinner'}
                         </div>
                       </article>
                     ))
                   ) : (
-                    <div className="public-category-empty">
+                    <div className="public-category-empty landing_body">
                       No matching dishes found.
                     </div>
                   )}
@@ -240,7 +240,7 @@ const PublicMenu = () => {
               </section>
             ))
           ) : (
-            <div className="public-menu-empty">
+            <div className="public-menu-empty landing_body">
               No categories or dishes found.
             </div>
           )}
@@ -261,7 +261,7 @@ const PublicMenu = () => {
       {showCategoryPopover && (
         <div ref={popoverRef} className="public-category-popover">
           <button 
-            className={`public-category-popover-item ${selectedCategory === 'all' ? 'active' : ''}`}
+            className={`public-category-popover-item landing_body ${selectedCategory === 'all' ? 'active' : ''}`}
             onClick={() => {
               setSelectedCategory('all');
               setShowCategoryPopover(false);
@@ -272,7 +272,7 @@ const PublicMenu = () => {
           {categories.map(cat => (
             <button 
               key={cat.id}
-              className={`public-category-popover-item ${selectedCategory === cat.name ? 'active' : ''}`}
+              className={`public-category-popover-item landing_body ${selectedCategory === cat.name ? 'active' : ''}`}
               onClick={() => {
                 setSelectedCategory(cat.name);
                 setShowCategoryPopover(false);
@@ -289,7 +289,7 @@ const PublicMenu = () => {
         <div className="public-filter-modal-overlay" onClick={() => setShowFilterModal(false)}>
           <div className="public-filter-modal" onClick={(e) => e.stopPropagation()}>
             <div className="public-filter-modal-header" style={{ backgroundColor: '#F6F6F6', padding: '16px 20px', borderBottom: '1px solid #e2e8f0' }}>
-              <h4 style={{ margin: 0, fontSize: 'var(--body-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)' }}>Filter</h4>
+              <h4 className="landing_heading2" style={{ margin: 0, color: 'var(--text-dark)' }}>Filter</h4>
             </div>
             
             <form onSubmit={(e) => {
@@ -301,9 +301,9 @@ const PublicMenu = () => {
               
               {/* Availability Section */}
               <div className="filter-group">
-                <label className="filter-label" style={{ display: 'block', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)', marginBottom: '8px' }}>Availability</label>
+                <label className="filter-label landing_body" style={{ display: 'block', marginBottom: '8px' }}>Availability</label>
                 <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
+                  <label className="landing_body" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                     <input 
                       type="checkbox" 
                       className="filter-checkbox-input"
@@ -312,7 +312,7 @@ const PublicMenu = () => {
                     />
                     Breakfast
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
+                  <label className="landing_body" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                     <input 
                       type="checkbox" 
                       className="filter-checkbox-input"
@@ -321,7 +321,7 @@ const PublicMenu = () => {
                     />
                     Dinner
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
+                  <label className="landing_body" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                     <input 
                       type="checkbox" 
                       className="filter-checkbox-input"
@@ -335,9 +335,9 @@ const PublicMenu = () => {
 
               {/* Dish Type Section */}
               <div className="filter-group" style={{ marginTop: '20px' }}>
-                <label className="filter-label" style={{ display: 'block', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)', marginBottom: '8px' }}>Dish type</label>
+                <label className="filter-label landing_body" style={{ display: 'block', marginBottom: '8px' }}>Dish type</label>
                 <div style={{ display: 'flex', gap: '20px', marginTop: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
+                  <label className="landing_body" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                     <input 
                       type="radio" 
                       name="publicDishType"
@@ -347,7 +347,7 @@ const PublicMenu = () => {
                     />
                     Veg
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
+                  <label className="landing_body" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                     <input 
                       type="radio" 
                       name="publicDishType"
@@ -357,7 +357,7 @@ const PublicMenu = () => {
                     />
                     Non Veg
                   </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
+                  <label className="landing_body" style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
                     <input 
                       type="radio" 
                       name="publicDishType"
@@ -372,8 +372,8 @@ const PublicMenu = () => {
 
               {/* Action Buttons */}
               <div style={{ display: 'flex', gap: '16px', marginTop: '24px' }}>
-                <button type="submit" className="filter-submit-btn">Filter</button>
-                <button type="button" className="filter-cancel-btn" onClick={() => setShowFilterModal(false)}>Cancel</button>
+                <button type="submit" className="filter-submit-btn landing_button">Filter</button>
+                <button type="button" className="filter-cancel-btn landing_button" onClick={() => setShowFilterModal(false)}>Cancel</button>
               </div>
             </form>
           </div>

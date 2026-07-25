@@ -204,7 +204,7 @@ function Offers({ offers, setOffers }) {
 
   return (
     <div className="offers-page-container" style={{ position: 'relative', minHeight: '80vh', paddingBottom: '80px' }}>
-      <h2 style={{ fontSize: 'var(--section-subtitle-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)', margin: '0 0 24px 0' }}>Offer</h2>
+      <h2 className="landing_heading2" style={{ color: 'var(--text-dark)', margin: '0 0 24px 0' }}>Offer</h2>
 
       <div className="offers-list">
         {offers.length > 0 ? (
@@ -243,38 +243,38 @@ function Offers({ offers, setOffers }) {
               {/* Columns Details */}
               <div className="offer-details-grid">
                 <div className="offer-detail-col">
-                  <span className="offer-col-label">Offer name</span>
-                  <span className="offer-col-value">{offer.name}</span>
+                  <span className="offer-col-label landing_body">Offer name</span>
+                  <span className="offer-col-value landing_body">{offer.name}</span>
                 </div>
 
                 <div className="offer-detail-col">
-                  <span className="offer-col-label">Duration</span>
-                  <span className="offer-col-value">{offer.duration}</span>
+                  <span className="offer-col-label landing_body">Duration</span>
+                  <span className="offer-col-value landing_body">{offer.duration}</span>
                 </div>
 
                 <div className="offer-detail-col">
-                  <span className="offer-col-label">Status</span>
-                  <span className={`offer-col-value status-badge ${offer.isActive ? 'active' : 'inactive'}`}>
+                  <span className="offer-col-label landing_body">Status</span>
+                  <span className={`offer-col-value status-badge landing_body ${offer.isActive ? 'active' : 'inactive'}`}>
                     {offer.status}
                   </span>
                 </div>
 
                 <div className="offer-detail-col">
-                  <span className="offer-col-label">Timing</span>
-                  <span className="offer-col-value">{offer.timing}</span>
+                  <span className="offer-col-label landing_body">Timing</span>
+                  <span className="offer-col-value landing_body">{offer.timing}</span>
                 </div>
 
                 <div className="offer-detail-col">
-                  <span className="offer-col-label">Price/percentage</span>
-                  <span className="offer-col-value">{offer.pricePercent}</span>
+                  <span className="offer-col-label landing_body">Price/percentage</span>
+                  <span className="offer-col-value landing_body">{offer.pricePercent}</span>
                 </div>
               </div>
             </div>
           ))
         ) : (
           <div className="empty-state" style={{ background: 'var(--bg-white)', borderRadius: '8px', padding: '40px', textAlign: 'center', border: '1px solid var(--border)' }}>
-            <h4 style={{ margin: '0 0 4px 0', fontSize: 'var(--menu-size)', fontWeight: 'var(--weight-semibold)' }}>No offers active</h4>
-            <p style={{ margin: 0, fontSize: 'var(--label-size)', color: 'var(--text-muted)' }}>Click the plus button to add a new marketing promotion.</p>
+            <h4 className="landing_heading2" style={{ margin: '0 0 4px 0' }}>No offers active</h4>
+            <p className="landing_body" style={{ margin: 0, color: 'var(--text-muted)' }}>Click the plus button to add a new marketing promotion.</p>
           </div>
         )}
       </div>
@@ -325,16 +325,16 @@ function Offers({ offers, setOffers }) {
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title">Create New Offer</h3>
+              <h3 className="modal-title landing_heading2">Create New Offer</h3>
               <button className="modal-close-btn" onClick={() => setIsModalOpen(false)}>×</button>
             </div>
 
             <form onSubmit={handleCreateOffer}>
               <div className="form-group">
-                <label className="form-label">Offer Name</label>
+                <label className="form-label landing_body">Offer Name</label>
                 <input 
                   type="text" 
-                  className="form-input" 
+                  className="form-input landing_placeholder" 
                   placeholder="e.g. Monsoon Special Combo"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -344,33 +344,33 @@ function Offers({ offers, setOffers }) {
 
               <div className="form-row">
                 <div className="form-group" style={{ flex: '1.5' }}>
-                  <label className="form-label">Duration</label>
+                  <label className="form-label landing_body">Duration</label>
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <input 
                       type="date" 
-                      className="form-input" 
+                      className="form-input landing_placeholder" 
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
                       required 
-                      style={{ padding: '8px 10px', fontSize: 'var(--label-size)' }}
+                      style={{ padding: '8px 10px' }}
                     />
-                    <span style={{ fontSize: 'var(--label-size)', color: 'var(--text-muted)' }}>to</span>
+                    <span className="landing_body" style={{ color: 'var(--text-muted)' }}>to</span>
                     <input 
                       type="date" 
-                      className="form-input" 
+                      className="form-input landing_placeholder" 
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
                       required 
-                      style={{ padding: '8px 10px', fontSize: 'var(--label-size)' }}
+                      style={{ padding: '8px 10px' }}
                     />
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Price/percentage</label>
+                  <label className="form-label landing_body">Price/percentage</label>
                   <input 
                     type="text" 
-                    className="form-input" 
+                    className="form-input landing_placeholder" 
                     placeholder="e.g. 150 Rs or 15%"
                     value={pricePercent}
                     onChange={(e) => setPricePercent(e.target.value)}
@@ -381,9 +381,9 @@ function Offers({ offers, setOffers }) {
 
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label">Timing</label>
+                  <label className="form-label landing_body">Timing</label>
                   <select 
-                    className="form-select"
+                    className="form-select landing_placeholder"
                     value={timing}
                     onChange={(e) => setTiming(e.target.value)}
                   >
@@ -394,9 +394,9 @@ function Offers({ offers, setOffers }) {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Badge Style</label>
+                  <label className="form-label landing_body">Badge Style</label>
                   <select 
-                    className="form-select"
+                    className="form-select landing_placeholder"
                     value={badgeType}
                     onChange={(e) => setBadgeType(e.target.value)}
                   >
@@ -409,8 +409,8 @@ function Offers({ offers, setOffers }) {
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Create Offer</button>
+                <button type="button" className="btn btn-secondary landing_button" onClick={() => setIsModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn btn-primary landing_button">Create Offer</button>
               </div>
             </form>
           </div>
