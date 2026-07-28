@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       git_ref:
-        description: 'Branch, Tag, or Commit SHA to deploy/revert to'
+        description: 'Branch, tag, or commit SHA to deploy/revert to'
         required: true
         default: 'main'
 
@@ -20,6 +20,12 @@ jobs:
     defaults:
       run:
         working-directory: backend
+
+    env:
+      HOSTINGER_HOST: ${{ secrets.HOSTINGER_HOST }}
+      HOSTINGER_PORT: '65002'
+      HOSTINGER_USER: ${{ secrets.HOSTINGER_USER }}
+      HOSTINGER_TARGET_DIR: /home/u583298036/domains/api.thevingo.com/public_html/
 
     steps:
       - name: Checkout
@@ -47,12 +53,8 @@ jobs:
 
       - name: Sync files
         run: |
-          rsync -az -e "ssh -p 22" --delete \
+          rsync -az --delete \
+            -e "ssh -p ${HOSTINGER_PORT}" \
             --exclude node_modules \
             --exclude .git \
-            ./ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:${{ secrets.HOSTINGER_PATH }}
-
-      - name: Restart app
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }} \
-          "cd ${{ secrets.HOSTINGER_PATH }} && npm install --omit=dev && npm run start --if-present"
+            ./ ${HOSTINGER_USER}@${HOSTINGER_HOST}:${HOSTINGER_TARGET_DIR}
