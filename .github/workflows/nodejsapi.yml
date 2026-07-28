@@ -47,7 +47,7 @@ jobs:
 
       - name: Sync files
         run: |
-          rsync -az --delete \
+          rsync -az -e "ssh -p 22" --delete \
             --exclude node_modules \
             --exclude .git \
             ./ ${{ secrets.HOSTINGER_USER }}@${{ secrets.HOSTINGER_HOST }}:${{ secrets.HOSTINGER_PATH }}
