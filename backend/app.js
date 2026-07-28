@@ -24,6 +24,15 @@ app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/offers', offerRoutes);
 
+// Test route to verify workflow deployment
+app.get('/test', (req, res) => {
+  res.send('test page');
+});
+
+app.get('/api/test', (req, res) => {
+  res.send('test page');
+});
+
 // Root route
 app.get('/', (req, res) => {
   res.json({
