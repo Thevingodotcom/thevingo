@@ -61,3 +61,18 @@ jobs:
             --exclude node_modules \
             --exclude .git \
             ./ ${HOSTINGER_USER}@${HOSTINGER_HOST}:${HOSTINGER_TARGET_DIR}
+
+      - name: Restart app
+        run: |
+          ssh -p ${HOSTINGER_PORT} -o StrictHostKeyChecking=no ${HOSTINGER_USER}@${HOSTINGER_HOST} \
+          "cd ${HOSTINGER_TARGET_DIR} && npm install --omit=dev && mkdir -p tmp && touch tmp/restart.txt"
+
+      - name: Success message
+        if: success()
+        run: echo "🎉 Thank you! The deployment was completed successfully."
+
+      - name: Failure message
+        if: failure()
+        run: |
+          echo "❌ Deployment failed! Please check the logs above to see what went wrong."
+          exit 1
