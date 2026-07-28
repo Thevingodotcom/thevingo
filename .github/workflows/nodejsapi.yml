@@ -131,10 +131,7 @@ jobs:
       - name: Restart app
         run: |
           ssh -p ${HOSTINGER_PORT} -o StrictHostKeyChecking=no ${HOSTINGER_USER}@${HOSTINGER_HOST} "
-            export NVM_DIR=\"\$HOME/.nvm\"
-            [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\"
             cd ${HOSTINGER_TARGET_DIR}
-            npx pm2 restart vingo-backend || npx pm2 start server.js --name \"vingo-backend\"
             mkdir -p tmp && touch tmp/restart.txt
           "
 
