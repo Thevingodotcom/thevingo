@@ -116,6 +116,19 @@ jobs:
             npm install --omit=dev
           "
 
+      - name: Create/Update .htaccess file in public_html
+        run: |
+          ssh -p ${HOSTINGER_PORT} -o StrictHostKeyChecking=no ${HOSTINGER_USER}@${HOSTINGER_HOST} '
+            mkdir -p /home/u583298036/domains/api.thevingo.com/public_html
+            cat << "EOF" > /home/u583298036/domains/api.thevingo.com/public_html/.htaccess
+            RewriteEngine On
+            RewriteRule ^$ http://127.0.0.1:${{ secrets.PORT || 5000 }}/ [P,L]
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteCond %{REQUEST_FILENAME} !-d
+            RewriteRule ^(.*)$ http://127.0.0.1:${{ secrets.PORT || 5000 }}/$1 [P,L]
+            EOF
+          '
+
       - name: Restart app
         run: |
           ssh -p ${HOSTINGER_PORT} -o StrictHostKeyChecking=no ${HOSTINGER_USER}@${HOSTINGER_HOST} "
