@@ -62,7 +62,59 @@ jobs:
           rsync -az --delete \
             -e "ssh -p ${HOSTINGER_PORT} -o StrictHostKeyChecking=no" \
             --exclude .git \
+            --exclude .env \
             ./ ${HOSTINGER_USER}@${HOSTINGER_HOST}:${HOSTINGER_TARGET_DIR}
+
+      - name: Install/Verify Node.js on Server
+        run: |
+          ssh -p ${HOSTINGER_PORT} -o StrictHostKeyChecking=no ${HOSTINGER_USER}@${HOSTINGER_HOST} '
+            # Install NVM if not present
+            if [ ! -d "$HOME/.nvm" ]; then
+              echo "Installing NVM..."
+              curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+            fi
+            
+            # Load NVM
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            
+            # Install & Use Node 20
+            echo "Installing/Ensuring Node.js 20..."
+            nvm install 20
+            nvm use 20
+            nvm alias default 20
+          '
+
+      - name: Create/Update .env file on Server
+        run: |
+          ssh -p ${HOSTINGER_PORT} -o StrictHostKeyChecking=no ${HOSTINGER_USER}@${HOSTINGER_HOST} "cat << 'EOF' > ${HOSTINGER_TARGET_DIR}.env
+          DB_HOST=${{ secrets.DB_HOST }}
+          DB_PORT=${{ secrets.DB_PORT }}
+          DB_NAME=${{ secrets.DB_NAME }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          PORT=${{ secrets.PORT }}
+          SMTP_HOST=${{ secrets.SMTP_HOST }}
+          SMTP_PORT=${{ secrets.SMTP_PORT }}
+          SMTP_SECURE=${{ secrets.SMTP_SECURE }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASS=${{ secrets.SMTP_PASS }}
+          PURCHASE_SMTP_USER=${{ secrets.PURCHASE_SMTP_USER }}
+          PURCHASE_SMTP_PASS=${{ secrets.PURCHASE_SMTP_PASS }}
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+          VITE_API_URL=${{ secrets.VITE_API_URL }}
+          VITE_API_URLTE_APP_URL=${{ secrets.VITE_API_URLTE_APP_URL }}
+          EOF"
+
+      - name: Install dependencies on Server
+        run: |
+          ssh -p ${HOSTINGER_PORT} -o StrictHostKeyChecking=no ${HOSTINGER_USER}@${HOSTINGER_HOST} "
+            export NVM_DIR=\"\$HOME/.nvm\"
+            [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\"
+            cd ${HOSTINGER_TARGET_DIR}
+            npm install --omit=dev
+          "
 
       - name: Restart app
         run: |
