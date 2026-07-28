@@ -62,4 +62,4 @@ jobs:
       - name: Restart app
         run: |
           ssh -p ${HOSTINGER_PORT} -o StrictHostKeyChecking=no ${HOSTINGER_USER}@${HOSTINGER_HOST} \
-          "cd ${HOSTINGER_TARGET_DIR} && npm install --omit=dev && npm run start --if-present"
+          "cd ${HOSTINGER_TARGET_DIR} && npm install --omit=dev && mkdir -p tmp && touch tmp/restart.txt"
