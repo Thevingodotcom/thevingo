@@ -54,7 +54,7 @@ jobs:
       - name: Sync files
         run: |
           rsync -az --delete \
-            -e "ssh -p ${HOSTINGER_PORT}" \
+            -e "ssh -p 65002" \
             --exclude node_modules \
             --exclude .git \
             ./ ${HOSTINGER_USER}@${HOSTINGER_HOST}:${HOSTINGER_TARGET_DIR}
