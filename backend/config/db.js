@@ -17,14 +17,16 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+const { logger } = require('../utils/logger');
+
 // Test the connection immediately
 (async () => {
   try {
     const connection = await pool.getConnection();
-    console.log('Database connected successfully.');
+    logger.info('Database connected successfully.');
     connection.release();
   } catch (err) {
-    console.error('Database connection failed:', err.message);
+    logger.error(`Database connection failed: ${err.message}`);
   }
 })();
 
