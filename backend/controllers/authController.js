@@ -4,6 +4,7 @@ const pool = require('../config/db');
 const path = require('path');
 const { getJWTSecret } = require('../utils/envHelper');
 const nodemailer = require('nodemailer');
+const { logger } = require('../utils/logger');
 
 const tokenSecret = getJWTSecret();
 const tokenExpiry = process.env.JWT_EXPIRY || '24h';
@@ -66,40 +67,40 @@ const comparePassword = async (inputPassword, savedPassword) => {
     const [contactCols] = await pool.query("SHOW COLUMNS FROM users LIKE 'contact'");
     if (contactCols.length === 0) {
       await pool.query("ALTER TABLE users ADD COLUMN contact VARCHAR(255) NULL");
-      console.log("Added contact column to users table.");
+      logger.info("Added contact column to users table.");
     }
     
     // 2. Check/Add restaurant_name column
     const [restNameCols] = await pool.query("SHOW COLUMNS FROM users LIKE 'restaurant_name'");
     if (restNameCols.length === 0) {
       await pool.query("ALTER TABLE users ADD COLUMN restaurant_name VARCHAR(255) NULL");
-      console.log("Added restaurant_name column to users table.");
+      logger.info("Added restaurant_name column to users table.");
     }
 
     // 3. Check/Add tagline column
     const [taglineCols] = await pool.query("SHOW COLUMNS FROM users LIKE 'tagline'");
     if (taglineCols.length === 0) {
       await pool.query("ALTER TABLE users ADD COLUMN tagline VARCHAR(255) NULL");
-      console.log("Added tagline column to users table.");
+      logger.info("Added tagline column to users table.");
     }
 
     // 3b. Check/Add hotel_address, hotel_city, hotel_state columns
     const [addrCols] = await pool.query("SHOW COLUMNS FROM users LIKE 'hotel_address'");
     if (addrCols.length === 0) {
       await pool.query("ALTER TABLE users ADD COLUMN hotel_address VARCHAR(500) NULL");
-      console.log("Added hotel_address column to users table.");
+      logger.info("Added hotel_address column to users table.");
     }
 
     const [cityCols] = await pool.query("SHOW COLUMNS FROM users LIKE 'hotel_city'");
     if (cityCols.length === 0) {
       await pool.query("ALTER TABLE users ADD COLUMN hotel_city VARCHAR(255) NULL");
-      console.log("Added hotel_city column to users table.");
+      logger.info("Added hotel_city column to users table.");
     }
 
     const [stateCols] = await pool.query("SHOW COLUMNS FROM users LIKE 'hotel_state'");
     if (stateCols.length === 0) {
       await pool.query("ALTER TABLE users ADD COLUMN hotel_state VARCHAR(255) NULL");
-      console.log("Added hotel_state column to users table.");
+      logger.info("Added hotel_state column to users table.");
     }
 
     // 4. Drop the four stats columns from the users table if they exist
@@ -108,7 +109,7 @@ const comparePassword = async (inputPassword, savedPassword) => {
       const [cols] = await pool.query(`SHOW COLUMNS FROM users LIKE '${col}'`);
       if (cols.length > 0) {
         await pool.query(`ALTER TABLE users DROP COLUMN ${col}`);
-        console.log(`Dropped column '${col}' from users table.`);
+        logger.info(`Dropped column '${col}' from users table.`);
       }
     }
 
@@ -116,28 +117,28 @@ const comparePassword = async (inputPassword, savedPassword) => {
     const [badgeCols] = await pool.query("SHOW COLUMNS FROM offers LIKE 'badge_type'");
     if (badgeCols.length === 0) {
       await pool.query("ALTER TABLE offers ADD COLUMN badge_type VARCHAR(255) NULL");
-      console.log("Added badge_type column to offers table.");
+      logger.info("Added badge_type column to offers table.");
     }
 
     // 6. Check/Add price_percent column to offers
     const [priceCols] = await pool.query("SHOW COLUMNS FROM offers LIKE 'price_percent'");
     if (priceCols.length === 0) {
       await pool.query("ALTER TABLE offers ADD COLUMN price_percent VARCHAR(255) NULL");
-      console.log("Added price_percent column to offers table.");
+      logger.info("Added price_percent column to offers table.");
     }
 
     // 7. Check/Add duration column to offers
     const [durCols] = await pool.query("SHOW COLUMNS FROM offers LIKE 'duration'");
     if (durCols.length === 0) {
       await pool.query("ALTER TABLE offers ADD COLUMN duration VARCHAR(255) NULL");
-      console.log("Added duration column to offers table.");
+      logger.info("Added duration column to offers table.");
     }
 
     // 8. Check/Add timing column to offers
     const [timingCols] = await pool.query("SHOW COLUMNS FROM offers LIKE 'timing'");
     if (timingCols.length === 0) {
       await pool.query("ALTER TABLE offers ADD COLUMN timing VARCHAR(255) NULL");
-      console.log("Added timing column to offers table.");
+      logger.info("Added timing column to offers table.");
     }
 
     // 9. Drop unique index uq_username if exists to support duplicate usernames
@@ -145,10 +146,10 @@ const comparePassword = async (inputPassword, savedPassword) => {
       const [indexes] = await pool.query("SHOW INDEX FROM users WHERE Key_name = 'uq_username'");
       if (indexes.length > 0) {
         await pool.query("ALTER TABLE users DROP INDEX uq_username");
-        console.log("Dropped unique index 'uq_username' from users table.");
+        logger.info("Dropped unique index 'uq_username' from users table.");
       }
     } catch (indexErr) {
-      console.error("Error during dropping uq_username index:", indexErr.message);
+      logger.error(`Error during dropping uq_username index: ${indexErr.message}`);
     }
 
     // 10. Check/Add unique index uq_email on email column
@@ -156,10 +157,10 @@ const comparePassword = async (inputPassword, savedPassword) => {
       const [emailIndexes] = await pool.query("SHOW INDEX FROM users WHERE Key_name = 'uq_email'");
       if (emailIndexes.length === 0) {
         await pool.query("ALTER TABLE users ADD UNIQUE INDEX uq_email (email)");
-        console.log("Added unique index 'uq_email' (email) to users table.");
+        logger.info("Added unique index 'uq_email' (email) to users table.");
       }
     } catch (indexErr) {
-      console.error("Error during adding uq_email index:", indexErr.message);
+      logger.error(`Error during adding uq_email index: ${indexErr.message}`);
     }
 
     // 11. Create otp_codes table to store OTP separately before registration
@@ -173,9 +174,9 @@ const comparePassword = async (inputPassword, savedPassword) => {
         UNIQUE KEY unique_email (email)
       )
     `);
-    console.log("Ensured otp_codes table exists for separate OTP tracking.");
+    logger.info("Ensured otp_codes table exists for separate OTP tracking.");
   } catch (err) {
-    console.error("Error during schema configuration sync:", err.message);
+    logger.error(`Error during schema configuration sync: ${err.message}`);
   }
 })();
 
