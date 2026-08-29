@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { API_URL } from './config';
 import logoIcon from './assets/icons/Frame 123.svg';
@@ -24,6 +24,7 @@ import PublicMenu from './pages/public-menu/PublicMenu';
 import OTPVerification from './pages/auth/OTPVerification/OTPVerification';
 import ResetPassword from './pages/auth/ResetPassword/ResetPassword';
 import ForgotPassword from './pages/auth/ForgotPassword/ForgotPassword';
+import TestPage from './pages/test/TestPage';
 
 // Application Architecture & Route Guards
 import Bootstrap from './app/Bootstrap';
@@ -320,6 +321,7 @@ function App() {
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/product" element={<ProductPage />} />
       <Route path="/menu/:userId" element={<PublicMenu />} />
+      <Route path="/test" element={<TestPage />} />
 
       {/* Login Route (Protected by PublicRoute guard) */}
       <Route 
