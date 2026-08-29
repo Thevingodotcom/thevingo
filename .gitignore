@@ -5,3 +5,4 @@ dist/
 .DS_Store
 backend/uploads/
 *.zip
+thevingo-fullstack.code-workspace

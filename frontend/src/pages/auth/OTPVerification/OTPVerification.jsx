@@ -145,14 +145,14 @@ const OTPVerification = () => {
           </svg>
         </div>
         
-        <h2>Verify Your Email</h2>
-        <p className="otp-verification-subtitle">
+        <h2 className="landing_heading2">Verify Your Email</h2>
+        <p className="otp-verification-subtitle landing_body">
           We've sent a 6-digit verification code to<br />
           <span>{email}</span>
         </p>
 
-        {error && <div className="otp-error-message">{error}</div>}
-        {success && <div className="otp-success-message">{success}</div>}
+        {error && <div className="otp-error-message landing_body">{error}</div>}
+        {success && <div className="otp-success-message landing_body">{success}</div>}
 
         <form onSubmit={verifyOTP}>
           <div className="otp-input-group" onPaste={handlePaste}>
@@ -161,7 +161,7 @@ const OTPVerification = () => {
                 key={index}
                 ref={index === activeOTPIndex ? inputRef : null}
                 type="text"
-                className={`otp-input ${otp[index] !== '' ? 'filled' : ''}`}
+                className={`otp-input landing_placeholder ${otp[index] !== '' ? 'filled' : ''}`}
                 value={otp[index]}
                 onChange={handleOnChange}
                 onKeyDown={(e) => handleOnKeyDown(e, index)}
@@ -172,16 +172,16 @@ const OTPVerification = () => {
 
           <button 
             type="submit" 
-            className="otp-verify-button"
+            className="otp-verify-button landing_button"
             disabled={loading || otp.join('').length < 6}
           >
             {loading ? 'Verifying...' : 'Verify Email'}
           </button>
         </form>
 
-        <p className="otp-resend">
+        <p className="otp-resend landing_body">
           Didn't receive the code? 
-          <button onClick={resendOTP} disabled={resending}>
+          <button onClick={resendOTP} disabled={resending} className="landing_anchor">
             {resending ? 'Sending...' : 'Resend OTP'}
           </button>
         </p>

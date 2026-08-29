@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { API_URL } from '../../../config';
+import { API_URL, DEFAULT_DISH_IMAGE } from '../../../config';
 import filterIcon from '../../../assets/icons/filterIcon.svg';
 import searchIcon from '../../../assets/icons/search icon.svg';
 import addBtnIcon from '../../../assets/icons/Add.svg';
@@ -173,13 +173,7 @@ function MenuList({ categories, setCategories }) {
 
     let defaultImg = newItemImage;
     if (!defaultImg) {
-      if (newItemCategory === 'biriyani') {
-        defaultImg = 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=300&auto=format&fit=crop&q=80';
-      } else if (newItemCategory === 'noodles') {
-        defaultImg = 'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=300&auto=format&fit=crop&q=80';
-      } else {
-        defaultImg = 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=300&auto=format&fit=crop&q=80';
-      }
+      defaultImg = DEFAULT_DISH_IMAGE;
     }
 
     try {
@@ -349,7 +343,7 @@ function MenuList({ categories, setCategories }) {
               price: price,
               categoryId: category.id,
               isVeg: isVeg,
-              image: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=300&auto=format&fit=crop&q=80',
+              image: DEFAULT_DISH_IMAGE,
               availableBreakfast: availBreakfast,
               availableLunch: availLunch,
               availableDinner: availDinner
@@ -435,7 +429,7 @@ function MenuList({ categories, setCategories }) {
           <input
             type="text"
             placeholder="Search menu items..."
-            className="search-input"
+            className="search-input landing_placeholder"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -458,15 +452,12 @@ function MenuList({ categories, setCategories }) {
               setAppliedAvailability({ Breakfast: true, Lunch: true, Dinner: true });
               setAppliedDishType('all');
             }}
+            className="landing_anchor"
             style={{
               background: 'none',
               border: 'none',
               color: '#EF5C43',
-              fontWeight: 'var(--weight-bold)',
-              fontSize: 'var(--caption-size)',
-              cursor: 'pointer',
-              marginLeft: '8px',
-              fontFamily: "'Inter', sans-serif"
+              cursor: 'pointer'
             }}
           >
             Clear Filters ✕
@@ -479,7 +470,7 @@ function MenuList({ categories, setCategories }) {
           displayCategories.map(category => (
             <section key={category.id} className="category-section">
               <div className="category-header">
-                <h3 className="category-title">{category.name}</h3>
+                <h3 className="category-title landing_heading2">{category.name}</h3>
                 <div style={{ position: 'relative' }}>
                   <button 
                     className="category-options-btn"
@@ -494,7 +485,7 @@ function MenuList({ categories, setCategories }) {
                     <div className="category-dropdown-menu">
                       <button
                         type="button"
-                        className="category-dropdown-item"
+                        className="category-dropdown-item landing_body"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectionCategoryId(category.id);
@@ -506,7 +497,7 @@ function MenuList({ categories, setCategories }) {
                       </button>
                       <button
                         type="button"
-                        className="category-dropdown-item delete-option"
+                        className="category-dropdown-item delete-option landing_body"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleDeleteCategory(category.id, category.name);
@@ -547,14 +538,14 @@ function MenuList({ categories, setCategories }) {
                           <img src={item.image} alt={item.name} className="food-img" />
                         </div>
                         <div className="food-details">
-                          <h4 className="food-name">{item.name}</h4>
-                          <p className="food-price">{item.price} Rs</p>
+                          <h4 className="food-name landing_body">{item.name}</h4>
+                          <p className="food-price landing_body">{item.price} Rs</p>
 
                           <div className="veg-indicator">
                             <div className={`veg-box ${!item.isVeg ? 'non-veg' : ''}`}>
                               <div className={`veg-dot ${!item.isVeg ? 'non-veg' : ''}`}></div>
                             </div>
-                            <span className="veg-text">Veg</span>
+                            <span className="veg-text landing_body">Veg</span>
                           </div>
                         </div>
                       </div>
@@ -564,7 +555,7 @@ function MenuList({ categories, setCategories }) {
                     </article>
                   ))
                 ) : (
-                  <div className="category-empty-state" style={{ gridColumn: '1 / -1', padding: '24px', background: '#f9fafb', borderRadius: '8px', border: '1.5px dashed #e5e7eb', textAlign: 'center', fontSize: 'var(--label-size)', color: '#6b7280' }}>
+                  <div className="category-empty-state" style={{ gridColumn: '1 / -1', padding: '24px', background: '#f9fafb', borderRadius: '8px', border: '1.5px dashed var(--border)', textAlign: 'center', fontSize: 'var(--label-size)', color: 'var(--text-muted)' }}>
                     No dishes in this category yet.
                   </div>
                 )}
@@ -579,14 +570,14 @@ function MenuList({ categories, setCategories }) {
         )
       ) : (
         /* Empty State: Import Menu */
-        <div className="import-menu-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '350px', background: '#fff', borderRadius: '12px', padding: '40px', marginTop: '20px' }}>
+        <div className="import-menu-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '350px', background: 'var(--bg-white)', borderRadius: '12px', padding: '40px', marginTop: '20px' }}>
           <button 
             type="button" 
             onClick={() => setIsImportModalOpen(true)}
             style={{
               padding: '16px 32px',
               background: '#EF5C43',
-              color: '#fff',
+              color: 'var(--bg-white)',
               border: 'none',
               borderRadius: '6px',
               fontSize: 'var(--body-large-size)',
@@ -612,7 +603,7 @@ function MenuList({ categories, setCategories }) {
               width: '50px',
               height: '50px',
               borderRadius: '25px',
-              backgroundColor: '#e5e7eb',
+              backgroundColor: 'var(--border)',
               border: 'none',
               cursor: 'pointer',
               display: 'flex',
@@ -715,17 +706,17 @@ function MenuList({ categories, setCategories }) {
         <div className="modal-overlay">
           <div className="modal-content dish-modal-content">
             <div className="modal-header dish-modal-header">
-              <h3 className="modal-title dish-modal-title">Add new dish</h3>
+              <h3 className="modal-title dish-modal-title landing_heading2">Add new dish</h3>
             </div>
 
             <form onSubmit={handleAddItemSubmit} className="dish-modal-form">
               {/* Row 1: Dish name & Pricing */}
               <div className="dish-form-grid-row">
                 <div className="dish-form-group">
-                  <label className="dish-label">Dish name</label>
+                  <label className="dish-label landing_body">Dish name</label>
                   <input
                     type="text"
-                    className="dish-input"
+                    className="dish-input landing_placeholder"
                     placeholder="Enter dish name"
                     value={newItemName}
                     onChange={(e) => setNewItemName(e.target.value)}
@@ -734,19 +725,19 @@ function MenuList({ categories, setCategories }) {
                 </div>
 
                 <div className="dish-form-group">
-                  <label className="dish-label">Pricing</label>
+                  <label className="dish-label landing_body">Pricing</label>
                   <div className="pricing-input-wrapper">
                     <input
                       type="number"
-                      className="dish-input pricing-input"
+                      className="dish-input pricing-input landing_placeholder"
                       placeholder="0"
                       value={newItemPrice}
                       onChange={(e) => setNewItemPrice(e.target.value)}
                       required
                     />
-                    <span className="currency-symbol">₹</span>
+                    <span className="currency-symbol landing_body">₹</span>
                   </div>
-                  <span className="pricing-helper">You can change the currency symbol at the restaurant setting page</span>
+                  <span className="pricing-helper landing_body">You can change the currency symbol at the restaurant setting page</span>
                 </div>
               </div>
 
@@ -762,7 +753,7 @@ function MenuList({ categories, setCategories }) {
                         onChange={(e) => setAvailBreakfast(e.target.checked)}
                         className="offer-row-checkbox"
                       />
-                      <span style={{ fontSize: 'var(--label-size)', color: '#111827', fontWeight: 'var(--weight-medium)' }}>Breakfast</span>
+                      <span style={{ fontSize: 'var(--label-size)', color: 'var(--text-dark)', fontWeight: 'var(--weight-medium)' }}>Breakfast</span>
                     </label>
 
                     <label className="availability-check-label">
@@ -772,7 +763,7 @@ function MenuList({ categories, setCategories }) {
                         onChange={(e) => setAvailDinner(e.target.checked)}
                         className="offer-row-checkbox"
                       />
-                      <span style={{ fontSize: 'var(--label-size)', color: '#111827', fontWeight: 'var(--weight-medium)' }}>Dinner</span>
+                      <span style={{ fontSize: 'var(--label-size)', color: 'var(--text-dark)', fontWeight: 'var(--weight-medium)' }}>Dinner</span>
                     </label>
 
                     <label className="availability-check-label">
@@ -782,7 +773,7 @@ function MenuList({ categories, setCategories }) {
                         onChange={(e) => setAvailLunch(e.target.checked)}
                         className="offer-row-checkbox"
                       />
-                      <span style={{ fontSize: 'var(--label-size)', color: '#111827', fontWeight: 'var(--weight-medium)' }}>Lunch</span>
+                      <span style={{ fontSize: 'var(--label-size)', color: 'var(--text-dark)', fontWeight: 'var(--weight-medium)' }}>Lunch</span>
                     </label>
                   </div>
                 </div>
@@ -791,7 +782,7 @@ function MenuList({ categories, setCategories }) {
                   <label className="dish-label">Dish type</label>
                   <div className="dish-type-radio-group">
                     <label className="dish-radio-label">
-                      <span style={{ fontSize: 'var(--label-size)', color: '#111827', fontWeight: 'var(--weight-medium)' }}>Veg</span>
+                      <span style={{ fontSize: 'var(--label-size)', color: 'var(--text-dark)', fontWeight: 'var(--weight-medium)' }}>Veg</span>
                       <input
                         type="radio"
                         name="dishType"
@@ -803,7 +794,7 @@ function MenuList({ categories, setCategories }) {
                     </label>
 
                     <label className="dish-radio-label" style={{ marginLeft: '12px' }}>
-                      <span style={{ fontSize: 'var(--label-size)', color: '#111827', fontWeight: 'var(--weight-medium)' }}>Non Veg</span>
+                      <span style={{ fontSize: 'var(--label-size)', color: 'var(--text-dark)', fontWeight: 'var(--weight-medium)' }}>Non Veg</span>
                       <input
                         type="radio"
                         name="dishType"
@@ -890,9 +881,9 @@ function MenuList({ categories, setCategories }) {
       {isImportModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '500px', padding: '24px' }}>
-            <div className="modal-header" style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
-              <h3 className="modal-title" style={{ fontSize: 'var(--body-large-size)', fontWeight: 'var(--weight-bold)', color: '#111827' }}>Import Menu from Excel/CSV</h3>
-              <button className="modal-close-btn" style={{ fontSize: 'var(--section-title-size)', cursor: 'pointer', background: 'none', border: 'none', color: '#6b7280' }} onClick={() => setIsImportModalOpen(false)}>×</button>
+            <div className="modal-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+              <h3 className="modal-title" style={{ fontSize: 'var(--body-large-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)' }}>Import Menu from Excel/CSV</h3>
+              <button className="modal-close-btn" style={{ fontSize: 'var(--section-title-size)', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text-muted)' }} onClick={() => setIsImportModalOpen(false)}>×</button>
             </div>
 
             <div style={{ marginTop: '16px', fontSize: 'var(--body-small-size)', color: '#374151', lineHeight: '1.6' }}>
@@ -911,7 +902,7 @@ function MenuList({ categories, setCategories }) {
                   width: '100%',
                   padding: '12px',
                   background: '#EF5C43',
-                  color: '#fff',
+                  color: 'var(--bg-white)',
                   border: 'none',
                   borderRadius: '6px',
                   fontWeight: 'var(--weight-semibold)',
@@ -927,7 +918,7 @@ function MenuList({ categories, setCategories }) {
               </button>
 
               <div style={{ border: '2px dashed #d1d5db', padding: '24px', borderRadius: '8px', textAlign: 'center', background: '#f9fafb' }}>
-                <label className="file-upload-btn-label" style={{ display: 'inline-block', padding: '10px 20px', background: '#EF5C43', color: '#fff', borderRadius: '4px', cursor: 'pointer', fontWeight: 'var(--weight-semibold)', boxShadow: '0 2px 4px rgba(239, 92, 67, 0.1)' }}>
+                <label className="file-upload-btn-label" style={{ display: 'inline-block', padding: '10px 20px', background: '#EF5C43', color: 'var(--bg-white)', borderRadius: '4px', cursor: 'pointer', fontWeight: 'var(--weight-semibold)', boxShadow: '0 2px 4px rgba(239, 92, 67, 0.1)' }}>
                   Choose CSV File
                   <input
                     type="file"
@@ -973,7 +964,7 @@ function MenuList({ categories, setCategories }) {
                 <div className="filter-group" style={{ marginTop: '20px' }}>
                   <label className="filter-label">Availability</label>
                   <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
                       <input 
                         type="checkbox" 
                         className="filter-checkbox-input"
@@ -982,7 +973,7 @@ function MenuList({ categories, setCategories }) {
                       />
                       Breakfast
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
                       <input 
                         type="checkbox" 
                         className="filter-checkbox-input"
@@ -991,7 +982,7 @@ function MenuList({ categories, setCategories }) {
                       />
                       Dinner
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
                       <input 
                         type="checkbox" 
                         className="filter-checkbox-input"
@@ -1007,7 +998,7 @@ function MenuList({ categories, setCategories }) {
                 <div className="filter-group" style={{ marginTop: '20px' }}>
                   <label className="filter-label">Dish type</label>
                   <div style={{ display: 'flex', gap: '20px', marginTop: '8px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
                       <input 
                         type="radio" 
                         name="dishType"
@@ -1017,7 +1008,7 @@ function MenuList({ categories, setCategories }) {
                       />
                       Veg
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
                       <input 
                         type="radio" 
                         name="dishType"
@@ -1027,7 +1018,7 @@ function MenuList({ categories, setCategories }) {
                       />
                       Non Veg
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: '#1f2937' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: 'var(--label-size)', fontWeight: 'var(--weight-medium)', color: 'var(--text-dark)' }}>
                       <input 
                         type="radio" 
                         name="dishType"

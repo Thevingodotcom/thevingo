@@ -1,96 +1,120 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { API_URL } from '../config';
+import { useAuth } from './AuthContext';
+import { initializeApp } from './AppInitializer';
 import logoIcon from '../assets/icons/Frame 123.svg';
 
 const Splash = ({ isFadingOut }) => (
   <div className={`splash-screen ${isFadingOut ? 'splash-fade-out' : ''}`}>
-    <img src={logoIcon} alt="Vingo Logo" className="splash-logo" />
+    <div className="splash-logo-wrapper">
+      <img src={logoIcon} alt="Vingo Logo" className="splash-logo" />
+      <div className="splash-loader-dots">
+        <span className="splash-dot"></span>
+        <span className="splash-dot"></span>
+        <span className="splash-dot"></span>
+      </div>
+    </div>
   </div>
 );
 
-const Bootstrap = ({ children, setCurrentUser }) => {
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [isFadingOut, setIsFadingOut] = useState(false);
+const Bootstrap = ({ children }) => {
+  const { 
+    isInitializing, 
+    setIsInitializing, 
+    isFadingOut, 
+    setIsFadingOut, 
+    setCurrentUser, 
+    logout 
+  } = useAuth();
+  
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    // Only intercept on the very first mount of Bootstrap.
-    // In React Router v6, if this component wraps <Routes>, it stays mounted.
-    // If the PWA is launched, it mounts.
-    const initApp = async () => {
-      // Prevent running this on subsequent internal navigation by using sessionStorage
-      const hasInitialized = sessionStorage.getItem('app_initialized');
-      
-      if (hasInitialized) {
-        // App was already initialized in this session tab, no need to intercept
-        setIsInitializing(false);
-        return;
-      }
+    let isMounted = true;
 
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-      
-      if (!isPWA) {
-        // Normal browser visit: just restore state and let standard routing handle it
-        const savedUser = localStorage.getItem('user');
-        if (savedUser) setCurrentUser(JSON.parse(savedUser));
-        setIsInitializing(false);
-        sessionStorage.setItem('app_initialized', 'true');
-        return;
-      }
-
-      sessionStorage.setItem('app_initialized', 'true');
+    const startAppBootstrap = async () => {
+      // Minimum display time for splash to prevent jarring flashes (750ms)
+      const minDisplayPromise = new Promise(resolve => setTimeout(resolve, 750));
 
       try {
-        const token = localStorage.getItem('token');
-        
-        if (!token) {
-          // No token, must login
-          navigate('/login', { replace: true });
-          return;
-        }
+        // Run full initialization: load token, user session, settings, theme, validate JWT
+        const initResult = await initializeApp();
 
-        // Validate token (or just check if offline)
-        const response = await fetch(`${API_URL}/api/menu/categories`, { // Using categories as a proxy for validation since validate endpoint might not exist
-          headers: { 'Authorization': `Bearer ${token}` }
-        }).catch(() => ({ ok: true, offline: true })); // Treat offline as valid if we have a token
+        await minDisplayPromise;
 
-        if (response.offline || response.ok) {
-          const savedUser = localStorage.getItem('user');
-          if (savedUser) setCurrentUser(JSON.parse(savedUser));
-          
-          navigate('/dashboard', { replace: true });
+        if (!isMounted) return;
+
+        // Determine launch routing:
+        // Fresh PWA / App Launch must never restore previously opened pages.
+        // It always starts from startup flow and navigates to /dashboard if logged in, or /login if not.
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const hasSessionLaunched = sessionStorage.getItem('vingo_session_launched');
+
+        if (initResult.isValid) {
+          if (initResult.user) {
+            setCurrentUser(initResult.user);
+          }
+
+          // On fresh launch or standalone PWA launch, force route to /dashboard
+          if (!hasSessionLaunched || isStandalone) {
+            sessionStorage.setItem('vingo_session_launched', 'true');
+            // If on a public marketing page or auth page during fresh launch, go to /dashboard
+            const isPublicPage = ['/login', '/register', '/verify-otp', '/forgot-password', '/reset-password', '/'].includes(location.pathname);
+            if (isPublicPage || isStandalone) {
+              navigate('/dashboard', { replace: true });
+            }
+          }
         } else {
-          // Token is likely invalid/expired
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setCurrentUser(null);
-          navigate('/login', { replace: true });
+          // Token is invalid, expired, or missing: purge auth state & navigate to /login
+          await logout();
+          sessionStorage.setItem('vingo_session_launched', 'true');
+
+          // For protected routes or PWA standalone launch, redirect to /login
+          const isProtectedRoute = location.pathname.startsWith('/dashboard');
+          if (isProtectedRoute || isStandalone) {
+            navigate('/login', { replace: true });
+          }
         }
       } catch (err) {
-        navigate('/login', { replace: true });
+        console.error('App bootstrap error:', err);
+        if (isMounted) {
+          await logout();
+          navigate('/login', { replace: true });
+        }
       } finally {
-        // Smooth fade out
-        setIsFadingOut(true);
-        setTimeout(() => {
-          setIsInitializing(false);
-        }, 300); // 300ms matches CSS transition
+        if (isMounted) {
+          // Trigger smooth CSS fade-out transition
+          setIsFadingOut(true);
+          setTimeout(() => {
+            if (isMounted) {
+              setIsInitializing(false);
+            }
+          }, 350); // Matches CSS opacity transition
+        }
       }
     };
-    
-    // Add a minimum display time for the splash screen so it's not a flash
-    const minSplashTime = new Promise(resolve => setTimeout(resolve, 800));
-    const initTask = initApp();
 
-    Promise.all([initTask, minSplashTime]);
-  }, [navigate, setCurrentUser]);
+    startAppBootstrap();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Run once on mount
 
   return (
     <>
       {isInitializing && <Splash isFadingOut={isFadingOut} />}
-      <div style={{ opacity: isInitializing && !isFadingOut ? 0 : 1, transition: 'opacity 0.3s ease', height: '100%' }}>
-        {(!isInitializing || isFadingOut) && children}
+      <div 
+        className="app-main-content-wrapper"
+        style={{ 
+          opacity: isInitializing && !isFadingOut ? 0 : 1, 
+          transition: 'opacity 0.35s ease-in-out', 
+          minHeight: '100vh',
+          width: '100%' 
+        }}
+      >
+        {children}
       </div>
     </>
   );

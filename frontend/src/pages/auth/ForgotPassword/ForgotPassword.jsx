@@ -53,20 +53,20 @@ const ForgotPassword = () => {
       <div className="register-card">
         {/* Left Column (Headers) */}
         <div className="register-card__left">
-          <h2 className="register-card__title">Forgot password</h2>
-          <p className="register-card__subtitle">
+          <h2 className="register-card__title landing_heading2">Forgot password</h2>
+          <p className="register-card__subtitle landing_body">
             Enter your email to receive an OTP<br />to reset your password
           </p>
         </div>
 
         {/* Right Column (Form) */}
         <form className="register-card__right" onSubmit={handleSubmit}>
-          {error && <div className="register-error-msg">{error}</div>}
+          {error && <div className="register-error-msg landing_body">{error}</div>}
           
           <div className="register-form-group">
             <input
               type="email"
-              className="register-input"
+              className="register-input landing_placeholder"
               placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -78,12 +78,12 @@ const ForgotPassword = () => {
           <div className="register-actions-row">
             <button 
               type="submit" 
-              className="register-submit-btn"
+              className="register-submit-btn landing_button"
               disabled={loading}
             >
               {loading ? 'Sending...' : 'Send OTP'}
             </button>
-            <Link to="/login" className="login-forgot-link" style={{ marginLeft: '16px', textDecoration: 'none', color: '#7c7c7c', fontSize: 'var(--label-size)' }}>
+            <Link to="/login" className="login-forgot-link landing_anchor" style={{ marginLeft: '16px', textDecoration: 'none' }}>
               Back to Login
             </Link>
           </div>

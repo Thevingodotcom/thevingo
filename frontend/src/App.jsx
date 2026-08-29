@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { API_URL } from './config';
-import './App.css';
 import logoIcon from './assets/icons/Frame 123.svg';
 
 // SVG assets import
@@ -27,9 +26,11 @@ import ResetPassword from './pages/auth/ResetPassword/ResetPassword';
 import ForgotPassword from './pages/auth/ForgotPassword/ForgotPassword';
 import TestPage from './pages/test/TestPage';
 
-// Route guards
-import PrivateRoute from './routes/PrivateRoute';
-import PublicRoute from './routes/PublicRoute';
+// Application Architecture & Route Guards
+import Bootstrap from './app/Bootstrap';
+import { useAuth } from './app/AuthContext';
+import { ProtectedRoute as PrivateRoute, PublicRoute } from './app/RouteGuard';
+import { haptics } from './utils/haptics';
 
 // Custom Speedometer/Dashboard SVG Icon
 const DashboardIcon = () => (
@@ -120,7 +121,10 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
           <div className="user-avatar">
             {getInitials(currentUser ? currentUser.username : 'Krishna Ram')}
           </div>
-          <button className="navbar-logout-btn" onClick={handleLogout}>
+          <button className="navbar-logout-btn" onClick={() => {
+            haptics.warning();
+            handleLogout();
+          }}>
             Logout
           </button>
         </div>
@@ -132,7 +136,10 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
         <aside ref={sidebarRef} className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
           <div
             className={`sidebar-item ${activeTab === 'dashboard' ? 'active' : ''}`}
-            onClick={() => navigate('/dashboard')}
+            onClick={() => {
+              haptics.selection();
+              navigate('/dashboard');
+            }}
           >
             <div className="sidebar-icon">
               <DashboardIcon />
@@ -142,7 +149,10 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
 
           <div
             className={`sidebar-item ${activeTab === 'kitchen' ? 'active' : ''}`}
-            onClick={() => navigate('/dashboard/kitchen-menu')}
+            onClick={() => {
+              haptics.selection();
+              navigate('/dashboard/kitchen-menu');
+            }}
           >
             <div className="sidebar-icon">
               <img src={kitchenMenuIcon} alt="Kitchen menu" style={{ width: '18px', height: '18px' }} />
@@ -152,7 +162,10 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
 
           <div
             className={`sidebar-item ${activeTab === 'offers' ? 'active' : ''}`}
-            onClick={() => navigate('/dashboard/offers')}
+            onClick={() => {
+              haptics.selection();
+              navigate('/dashboard/offers');
+            }}
           >
             <div className="sidebar-icon">
               <img src={offerIcon} alt="Offers" style={{ width: '18px', height: '18px' }} />
@@ -162,7 +175,10 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
 
           <div
             className={`sidebar-item ${activeTab === 'distribution' ? 'active' : ''}`}
-            onClick={() => navigate('/dashboard/distribution')}
+            onClick={() => {
+              haptics.selection();
+              navigate('/dashboard/distribution');
+            }}
           >
             <div className="sidebar-icon">
               <img src={distributionIcon} alt="Distribution" style={{ width: '18px', height: '18px' }} />
@@ -172,7 +188,10 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
 
           <div
             className={`sidebar-item ${activeTab === 'setting' ? 'active' : ''}`}
-            onClick={() => navigate('/dashboard/settings')}
+            onClick={() => {
+              haptics.selection();
+              navigate('/dashboard/settings');
+            }}
           >
             <div className="sidebar-icon">
               <img src={settingIcon} alt="Setting" style={{ width: '18px', height: '18px' }} />
@@ -203,16 +222,7 @@ function ScrollToTop() {
 
 function App() {
   const navigate = useNavigate();
-
-  // Logged-in User State
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const { currentUser, setCurrentUser, logout } = useAuth();
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -224,56 +234,18 @@ function App() {
   };
 
   const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        await fetch(`${API_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      }
-    } catch (e) {
-      console.error('Logout error:', e);
-    }
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setCurrentUser(null);
-    navigate('/');
+    await logout();
+    navigate('/login', { replace: true });
   };
 
   // Sidebar state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => window.innerWidth <= 768);
 
-  // Initial Menu Categories & Items (Shared globally for stats + menu list)
+  // Shared Data State
   const [categories, setCategories] = useState([]);
-
-  useEffect(() => {
-    if (!currentUser) {
-      setCategories([]);
-      return;
-    }
-
-    const fetchCategories = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_URL}/api/menu/categories`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setCategories(data.categories);
-        }
-      } catch (err) {
-        console.error('Failed to fetch menu categories:', err);
-      }
-    };
-
-    fetchCategories();
-  }, [currentUser]);
+  const [offers, setOffers] = useState([]);
+  const [scanCount, setScanCount] = useState(0);
+  const [isDataLoading, setIsDataLoading] = useState(false);
 
   // Shared Settings state
   const [restaurantName, setRestaurantName] = useState('thevingo.com');
@@ -298,37 +270,50 @@ function App() {
     }
   }, [currentUser]);
 
-  // Shared Offers state
-  const [offers, setOffers] = useState([]);
-
   useEffect(() => {
     if (!currentUser) {
+      setCategories([]);
       setOffers([]);
+      setScanCount(0);
       return;
     }
 
-    const fetchOffers = async () => {
+    const fetchAllData = async () => {
+      setIsDataLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_URL}/api/offers`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setOffers(data.offers);
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        const [catRes, offRes, statsRes] = await Promise.all([
+          fetch(`${API_URL}/api/menu/categories`, { headers }),
+          fetch(`${API_URL}/api/offers`, { headers }),
+          fetch(`${API_URL}/api/auth/dashboard`, { headers })
+        ]);
+
+        if (catRes.ok) {
+          const data = await catRes.json();
+          setCategories(data.categories || []);
+        }
+        if (offRes.ok) {
+          const data = await offRes.json();
+          setOffers(data.offers || []);
+        }
+        if (statsRes.ok) {
+          const data = await statsRes.json();
+          setScanCount(data.stats?.scanCount || 0);
         }
       } catch (err) {
-        console.error('Failed to fetch offers:', err);
+        console.error('Failed to fetch data in parallel:', err);
+      } finally {
+        setIsDataLoading(false);
       }
     };
 
-    fetchOffers();
+    fetchAllData();
   }, [currentUser]);
 
   return (
-    <>
+    <Bootstrap>
       <ScrollToTop />
       <Routes>
       {/* Landing Page */}
@@ -419,7 +404,7 @@ function App() {
           </PrivateRoute>
         }
       >
-        <Route index element={<Dashboard categories={categories} offers={offers} />} />
+        <Route index element={<Dashboard categories={categories} offers={offers} scanCount={scanCount} isDataLoading={isDataLoading} />} />
         <Route path="kitchen-menu" element={<MenuList categories={categories} setCategories={setCategories} />} />
         <Route path="offers" element={<Offers offers={offers} setOffers={setOffers} />} />
         <Route path="distribution" element={<Distribution restaurantName={restaurantName} setRestaurantName={setRestaurantName} tagline={tagline} setTagline={setTagline} currentUser={currentUser} />} />
@@ -429,7 +414,7 @@ function App() {
       {/* Fallback redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-    </>
+    </Bootstrap>
   );
 }
 

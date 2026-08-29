@@ -30,7 +30,7 @@
 .register-card {
   width: 100%;
   max-width: 860px;
-  background-color: #ffffff;
+  background-color: var(--bg-white);
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
   display: flex;
@@ -78,6 +78,43 @@
   width: 100%;
 }
 
+.register-password-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.register-password-group .register-input {
+  padding-right: 42px;
+}
+
+.register-password-toggle {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  padding: 6px;
+  margin: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7c7c7c;
+  border-radius: 4px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.register-password-toggle:hover {
+  color: #EF5C43;
+  background-color: rgba(239, 92, 67, 0.08);
+}
+
+.register-password-toggle:focus-visible {
+  outline: 2px solid #EF5C43;
+}
+
 .register-input {
   width: 100%;
   font-family: 'Inter', sans-serif;
@@ -88,7 +125,7 @@
   border-radius: 4px;
   box-sizing: border-box;
   outline: none;
-  background-color: #ffffff;
+  background-color: var(--bg-white);
   transition: border-color 0.2s ease;
 }
 
@@ -112,7 +149,7 @@
 .register-submit-btn {
   font-family: 'Inter', sans-serif;
   background-color: #EF5C43; /* Brand orange color */
-  color: #ffffff;
+  color: var(--bg-white);
   border: none;
   border-radius: 4px;
   padding: 10px 32px;

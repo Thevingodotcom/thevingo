@@ -4,7 +4,7 @@
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  background-color: #ffffff;
+  background-color: var(--bg-white);
   font-family: 'Inter', sans-serif;
 }
 
@@ -31,11 +31,11 @@
   font-family: 'Poppins', sans-serif;
   font-size: var(--page-title-size);
   font-weight: var(--weight-bold);
-  color: #1f2937;
+  color: var(--text-dark);
   line-height: 1.25;
   margin-bottom: 24px;
   letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #1f2937 0%, #f05a28 100%);
+  background: linear-gradient(135deg, var(--text-dark) 0%, var(--primary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -52,7 +52,7 @@
   font-family: 'Poppins', sans-serif;
   font-size: var(--section-title-size);
   font-weight: var(--weight-bold);
-  color: #1f2937;
+  color: var(--text-dark);
   margin-bottom: 32px;
   border-bottom: 2px solid #f3f4f6;
   padding-bottom: 12px;
@@ -65,7 +65,7 @@
 .product-section-subtitle {
   font-size: var(--body-small-size);
   font-weight: var(--weight-regular);
-  color: #6b7280;
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -84,7 +84,7 @@
   line-height: 1.6;
   color: #374151;
   background: #FAF2F0;
-  border-left: 4px solid #f05a28;
+  border-left: 4px solid var(--primary);
   padding: 20px 24px;
   border-radius: 0 12px 12px 0;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -97,7 +97,7 @@
 }
 
 .product-features__list li strong {
-  color: #1f2937;
+  color: var(--text-dark);
   font-size: var(--body-size);
   display: block;
   margin-bottom: 4px;
@@ -115,8 +115,8 @@
 }
 
 .product-howitworks__steps li {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 32px 24px;
   position: relative;
@@ -129,7 +129,7 @@
 
 .product-howitworks__steps li:hover {
   transform: translateY(-4px);
-  border-color: #f05a28;
+  border-color: var(--primary);
 }
 
 .product-howitworks__steps li::before {
@@ -145,7 +145,7 @@
 
 .product-howitworks__steps li strong {
   font-size: var(--body-size);
-  color: #1f2937;
+  color: var(--text-dark);
 }
 
 .product-howitworks__steps li p, 
@@ -157,10 +157,10 @@
 
 /* Customer Testimonials */
 .product-testimonials {
-  background: linear-gradient(135deg, #f05a28 0%, #d8481b 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
   border-radius: 16px;
   padding: 48px;
-  color: #ffffff;
+  color: var(--bg-white);
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -168,7 +168,7 @@
 }
 
 .product-testimonials .product-section-title {
-  color: #ffffff;
+  color: var(--bg-white);
   border-bottom-color: rgba(255, 255, 255, 0.2);
   justify-content: center;
   display: inline-flex;
@@ -194,7 +194,7 @@
 }
 
 .product-faq__item {
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
   padding-bottom: 20px;
 }
 
@@ -206,7 +206,7 @@
 .product-faq__question {
   font-size: var(--body-size);
   font-weight: var(--weight-semibold);
-  color: #1f2937;
+  color: var(--text-dark);
   margin: 0 0 8px;
 }
 
@@ -221,22 +221,22 @@
 .product-cta {
   text-align: center;
   padding: 40px 0;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border);
 }
 
 .product-cta__title {
   font-family: 'Poppins', sans-serif;
   font-size: var(--section-title-size);
   font-weight: var(--weight-bold);
-  color: #1f2937;
+  color: var(--text-dark);
   margin: 0 0 24px;
 }
 
 .product-cta__btn {
   display: inline-block;
   padding: 16px 36px;
-  background: #f05a28;
-  color: #ffffff;
+  background: var(--primary);
+  color: var(--bg-white);
   font-size: var(--body-size);
   font-weight: var(--weight-semibold);
   border-radius: 8px;
@@ -246,7 +246,7 @@
 }
 
 .product-cta__btn:hover {
-  background: #d8481b;
+  background: var(--primary-hover);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(240, 90, 40, 0.4);
 }

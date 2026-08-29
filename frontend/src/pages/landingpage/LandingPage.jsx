@@ -25,17 +25,17 @@ const LandingPage = () => {
       <section className="landing-hero" id="landing-hero">
         <div className="landing-hero__inner">
           <div className="landing-hero__content">
-            <h1 className="landing-hero__title">
+            <h1 className="landing_heading1">
               Start Your Free Journey Today
             </h1>
-            <p className="landing-hero__subtitle">
+            <p className="landing_body2">
               Affordable, customizable digital menus for Cafes. Switch to QR or print your own in seconds, for free
             </p>
             <div className="landing-hero__buttons">
-              <Link to="/register" className="landing-hero__btn landing-hero__btn--primary">
+              <Link to="/register" className="landing-hero__btn landing-hero__btn--primary landing_button">
                 Create account
               </Link>
-              <Link to="/product#how-it-works" className="landing-hero__btn landing-hero__btn--outline">
+              <Link to="/product#how-it-works" className="landing-hero__btn landing-hero__btn--outline landing_button">
                 See how it works
               </Link>
             </div>
@@ -53,13 +53,13 @@ const LandingPage = () => {
       {/* Features Section */}
       <section className="landing-features" id="landing-features">
         <div className="landing-features__inner">
-          <h2 className="landing-features__title">Features</h2>
+          <h2 className="landing_heading1">Features</h2>
           <div className="landing-features__grid">
             <div className="landing-features__item">
               <div className="landing-features__icon-wrapper">
                 <img src={featureHybrid} alt="Build Your Menu" className="landing-features__icon" />
               </div>
-              <p className="landing-features__label">
+              <p className="landing_body">
                 Build Your Menu<br />in Minutes
               </p>
             </div>
@@ -67,7 +67,7 @@ const LandingPage = () => {
               <div className="landing-features__icon-wrapper">
                 <img src={featureMoney} alt="Menu Magic" className="landing-features__icon" />
               </div>
-              <p className="landing-features__label">
+              <p className="landing_body">
                 Menu Magic on<br />the Fly
               </p>
             </div>
@@ -75,7 +75,7 @@ const LandingPage = () => {
               <div className="landing-features__icon-wrapper">
                 <img src={featureUpload} alt="Bulk Upload" className="landing-features__icon" />
               </div>
-              <p className="landing-features__label">
+              <p className="landing_body">
                 Bulk Upload in a<br />Snap.
               </p>
             </div>
@@ -83,7 +83,7 @@ const LandingPage = () => {
               <div className="landing-features__icon-wrapper">
                 <img src={featureMenu} alt="Hybrid Flexibility" className="landing-features__icon" />
               </div>
-              <p className="landing-features__label">
+              <p className="landing_body">
                 Hybrid Flexibility
               </p>
             </div>
@@ -91,12 +91,12 @@ const LandingPage = () => {
               <div className="landing-features__icon-wrapper">
                 <img src={featureReprint} alt="No More Reprinting Fees" className="landing-features__icon" />
               </div>
-              <p className="landing-features__label">
+              <p className="landing_body">
                 No More<br />Reprinting Fees
               </p>
             </div>
           </div>
-          <a href="#features" className="landing-features__detail-link">
+          <a href="#features" className="landing-features__detail-link landing_anchor">
             Know feature in detail
           </a>
         </div>
@@ -105,7 +105,7 @@ const LandingPage = () => {
       {/* Testimonials Section */}
       <section className="landing-testimonials" id="landing-testimonials">
         <div className="landing-testimonials__inner">
-          <h2 className="landing-testimonials__title">Customer testimonials</h2>
+          <h2 className="landing-testimonials__title landing_heading1">Customer testimonials</h2>
           <div className="landing-testimonials__card">
             <div className="landing-testimonials__avatar-wrapper">
               <img
@@ -114,13 +114,13 @@ const LandingPage = () => {
                 className="landing-testimonials__avatar"
               />
             </div>
-            <blockquote className="landing-testimonials__quote">
+            <blockquote className="landing-testimonials__quote landing_body2">
               "I was struggling with the cost and hassle of physical menus
               until I found the Vingo. It's super easy to set up, saves me
               money on reprinting, and my customers love the option to
               scan a QR code or grab a fresh printout."
             </blockquote>
-            <p className="landing-testimonials__author">–Mukesh sharonna</p>
+            <p className="landing-testimonials__author landing_body">–Mukesh sharonna</p>
           </div>
         </div>
       </section>
@@ -129,23 +129,23 @@ const LandingPage = () => {
       <section className="landing-howitworks" id="landing-howitworks">
         <div className="landing-howitworks__inner">
           <div className="landing-howitworks__content">
-            <h2 className="landing-howitworks__title">How it Work</h2>
+            <h2 className="landing-howitworks__title landing_heading1">How it Work</h2>
             <div className="landing-howitworks__steps">
               <div className="landing-howitworks__step">
-                <h4 className="landing-howitworks__step-label">Step one:</h4>
-                <p className="landing-howitworks__step-desc">
+                <h4 className="landing-howitworks__step-label landing_heading2">Step one:</h4>
+                <p className="landing-howitworks__step-desc landing_body">
                   Create your free account right here in seconds.
                 </p>
               </div>
               <div className="landing-howitworks__step">
-                <h4 className="landing-howitworks__step-label">Step two:</h4>
-                <p className="landing-howitworks__step-desc">
+                <h4 className="landing-howitworks__step-label landing_heading2">Step two:</h4>
+                <p className="landing-howitworks__step-desc landing_body">
                   Add your menu items and customize them as you like
                 </p>
               </div>
               <div className="landing-howitworks__step">
-                <h4 className="landing-howitworks__step-label">Step three:</h4>
-                <p className="landing-howitworks__step-desc">
+                <h4 className="landing-howitworks__step-label landing_heading2">Step three:</h4>
+                <p className="landing-howitworks__step-desc landing_body">
                   Download your QR code or print your menu on the go.
                 </p>
               </div>
