@@ -17,7 +17,7 @@ describe('Login Component', () => {
     );
 
     // Verify title and input fields
-    expect(screen.getByText(/Login to you vingo account/i)).toBeInTheDocument();
+    expect(screen.getByText(/Login to your vingo account/i)).toBeInTheDocument();
     
     const emailInput = screen.getByPlaceholderText(/Email address/i);
     const passwordInput = screen.getByPlaceholderText(/Password/i);

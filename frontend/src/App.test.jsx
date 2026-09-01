@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
 import App from './App';
+import { AuthProvider } from './app/AuthContext';
 
 // Mock child pages or subcomponents if needed to prevent rendering errors
 vi.mock('./pages/landingpage/LandingPage', () => ({
@@ -13,7 +14,9 @@ describe('App Component Routing', () => {
   it('renders landing page by default', () => {
     render(
       <BrowserRouter>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </BrowserRouter>
     );
 
