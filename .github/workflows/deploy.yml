@@ -30,6 +30,12 @@ jobs:
           cd frontend
           npm run test
 
+      - name: 🔐 Create environment file
+        run: |
+          cd frontend
+          echo "VITE_API_URL=${{ secrets.VITE_API_URL }}" > .env
+          echo "VITE_APP_URL=${{ secrets.VITE_APP_URL }}" >> .env
+
       - name: 🏗️ Build Project
         run: |
           cd frontend
