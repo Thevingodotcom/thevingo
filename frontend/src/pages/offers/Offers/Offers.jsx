@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { API_URL } from '../../../config';
+import authStorage from '../../../app/authStorage';
 import addBtnIcon from '../../../assets/icons/Add.svg';
 import deleteIcon from '../../../assets/icons/delete.svg';
 
@@ -87,7 +88,7 @@ function Offers({ offers, setOffers }) {
     const nextActive = !offer.isActive;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = authStorage.getToken();
       const response = await fetch(`${API_URL}/api/offers/${id}/toggle`, {
         method: 'PUT',
         headers: {
@@ -135,7 +136,7 @@ function Offers({ offers, setOffers }) {
     if (checkedIds.length === 0) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = authStorage.getToken();
       const response = await fetch(`${API_URL}/api/offers/delete-batch`, {
         method: 'POST',
         headers: {
@@ -166,7 +167,7 @@ function Offers({ offers, setOffers }) {
     const formattedDuration = `${months[start.getMonth()]} ${String(start.getDate()).padStart(2, '0')}-${months[end.getMonth()]} ${String(end.getDate()).padStart(2, '0')}`;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = authStorage.getToken();
       const response = await fetch(`${API_URL}/api/offers`, {
         method: 'POST',
         headers: {

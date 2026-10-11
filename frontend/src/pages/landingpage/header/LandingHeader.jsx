@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import authStorage from '../../../app/authStorage';
 import './LandingHeader.css';
 import logoIcon from '../../../assets/icons/Frame 123.svg';
 
 const LandingHeader = () => {
-  const token = localStorage.getItem('token');
+  const token = authStorage.getToken();
   const startPath = token ? '/dashboard' : '/login';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 

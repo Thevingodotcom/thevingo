@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { API_URL, DEFAULT_DISH_IMAGE } from '../../config';
+import { getPersistentDeviceId } from '../../utils/device';
 import catFilterIcon from '../../assets/icons/Catagory Filter.svg';
 import filterIcon from '../../assets/icons/filterIcon.svg';
 import './PublicMenu.css';
@@ -54,29 +55,124 @@ const PublicMenu = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const fetchMenu = async () => {
-      try {
+  const fetchMenu = async (showLoadingSpinner = true, isScan = false) => {
+    try {
+      if (showLoadingSpinner) {
         setLoading(true);
-        const response = await fetch(`${API_URL}/api/menu/public/${userId}`);
-        const data = await response.json();
-        
-        if (response.ok) {
-          setRestaurantName(data.restaurant_name);
-          setTagline(data.tagline);
-          setCategories(data.categories);
-        } else {
+      }
+      const deviceId = getPersistentDeviceId();
+      const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+      const qrId = searchParams.get('qr_id') || searchParams.get('qr') || searchParams.get('table') || 'default';
+
+      const scanParams = isScan
+        ? `&deviceId=${encodeURIComponent(deviceId)}&qrId=${encodeURIComponent(qrId)}`
+        : `&sync=true&scan=0&deviceId=${encodeURIComponent(deviceId)}&qrId=${encodeURIComponent(qrId)}`;
+
+      const response = await fetch(`${API_URL}/api/menu/public/${userId}?_t=${Date.now()}${scanParams}`, {
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache',
+          'X-Device-Id': deviceId,
+          ...(!isScan ? { 'x-menu-sync': 'true' } : {})
+        }
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        setRestaurantName(data.restaurant_name);
+        setTagline(data.tagline);
+        setCategories(data.categories);
+        setError(null);
+
+        // Notify other tabs in same browser if a scan was counted
+        if (data.scan_counted) {
+          try {
+            if (typeof BroadcastChannel !== 'undefined') {
+              const scanBc = new BroadcastChannel('thevingo_scan_updates');
+              scanBc.postMessage({
+                type: 'SCAN_COUNT_UPDATED',
+                scanCount: typeof data.scan_count === 'number' ? data.scan_count : null,
+                timestamp: Date.now()
+              });
+              scanBc.close();
+            }
+          } catch (bcErr) {
+            // Non-fatal
+          }
+        }
+      } else {
+        if (showLoadingSpinner) {
           setError(data.message || 'Failed to load menu.');
         }
-      } catch (err) {
-        console.error(err);
+      }
+    } catch (err) {
+      console.error('Fetch menu error:', err);
+      if (showLoadingSpinner) {
         setError('Error connecting to the server.');
-      } finally {
+      }
+    } finally {
+      if (showLoadingSpinner) {
         setLoading(false);
       }
-    };
+    }
+  };
 
-    fetchMenu();
+  useEffect(() => {
+    if (!userId) return;
+
+    // 1. Initial menu load on scan (evaluates 2-hour device cooldown on backend)
+    fetchMenu(true, true);
+
+    // 2. Real-time updates via Server-Sent Events (SSE)
+    let eventSource = null;
+    try {
+      eventSource = new EventSource(`${API_URL}/api/menu/public/${userId}/stream`);
+
+      eventSource.addEventListener('menu-updated', () => {
+        // Silently re-fetch updated menu data as background sync without counting a scan
+        fetchMenu(false, false);
+      });
+
+      eventSource.onerror = () => {
+        // Native EventSource automatically handles reconnection
+      };
+    } catch (sseErr) {
+      console.warn('SSE connection warning:', sseErr);
+    }
+
+    // 3. Same-browser instant cross-tab sync via BroadcastChannel
+    let broadcastChannel = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        broadcastChannel = new BroadcastChannel('thevingo_menu_updates');
+        broadcastChannel.onmessage = () => {
+          fetchMenu(false, false);
+        };
+      } catch (bcErr) {
+        console.warn('BroadcastChannel warning:', bcErr);
+      }
+    }
+
+    // 4. Automatic revalidation on tab focus or visibility change (does not increment scan)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchMenu(false, false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+      if (broadcastChannel) {
+        broadcastChannel.close();
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
   }, [userId]);
 
   // Helper to format food availability
@@ -85,6 +181,7 @@ const PublicMenu = () => {
     if (item.availableBreakfast) list.push('Breakfast');
     if (item.availableLunch) list.push('Lunch');
     if (item.availableDinner) list.push('Dinner');
+    if (list.length === 0) return 'Unavailable';
     return list.join('/');
   };
 
@@ -217,6 +314,12 @@ const PublicMenu = () => {
                           <div className="public-food-details">
                             <h4 className="public-food-name landing_body">{item.name}</h4>
                             <p className="public-food-price landing_body">{item.price} Rs</p>
+
+                            {item.description && (
+                              <p className="public-food-desc landing_body" style={{ fontSize: '13px', color: '#6b7280', margin: '4px 0 6px 0', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                {item.description}
+                              </p>
+                            )}
 
                             <div className="public-veg-indicator">
                               <div className={`public-veg-box ${!item.isVeg ? 'non-veg' : ''}`}>

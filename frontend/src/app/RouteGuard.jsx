@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import authStorage from './authStorage';
 
 /**
  * ProtectedRoute ensures that:
@@ -16,7 +17,7 @@ export const ProtectedRoute = ({ children }) => {
     return null;
   }
 
-  const savedToken = token || localStorage.getItem('token');
+  const savedToken = token || authStorage.getToken();
 
   if (!savedToken) {
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -37,7 +38,7 @@ export const PublicRoute = ({ children }) => {
     return null;
   }
 
-  const savedToken = token || localStorage.getItem('token');
+  const savedToken = token || authStorage.getToken();
 
   if (savedToken) {
     return <Navigate to="/dashboard" replace />;

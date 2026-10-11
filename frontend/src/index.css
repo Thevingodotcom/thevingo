@@ -1308,6 +1308,9 @@ body {
   border-radius: 12px;
   width: 680px;
   max-width: 95%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   border: none;
@@ -1317,6 +1320,7 @@ body {
   background-color: #f3f4f6;
   padding: 16px 28px;
   border-bottom: 1.2px solid #e5e7eb;
+  flex-shrink: 0;
 }
 
 .dish-modal-title {
@@ -1328,6 +1332,8 @@ body {
 
 .dish-modal-form {
   padding: 28px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .dish-form-grid-row {
@@ -2002,21 +2008,41 @@ body {
   }
 
   /* Modals Layout */
-  .modal-content,
-  .dish-modal-content {
-    max-width: 90% !important;
-    width: 90% !important;
-    padding: 16px !important;
+  .modal-content {
+    max-width: 95% !important;
+    width: 95% !important;
+    padding: 20px !important;
   }
 
-  .dish-modal-form {
-    padding: 16px 8px !important;
+  .dish-modal-content {
+    max-width: 95% !important;
+    width: 95% !important;
+    padding: 0 !important;
+    max-height: 92vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .dish-modal-header {
+    padding: 14px 18px !important;
+  }
+
+  .dish-modal-form,
+  .dish-details-body {
+    padding: 16px 14px !important;
   }
 
   /* Modals Form Fields */
   .dish-form-grid-row {
     grid-template-columns: 1fr !important;
     gap: 16px !important;
+  }
+
+  /* Food Grid on Tablet / Mobile */
+  .food-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+    gap: 14px !important;
   }
 
   /* Offers Page Responsive Layout */
@@ -2220,3 +2246,239 @@ body {
     opacity: 1;
   }
 }
+
+/* Dish Details Modal Responsive System */
+.dish-details-modal-content {
+  max-width: 580px;
+}
+
+.dish-details-body {
+  padding: 24px;
+}
+
+.dish-details-meta-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.dish-details-img-wrapper {
+  width: 130px;
+  height: 130px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: #f3f4f6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.dish-details-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dish-details-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.dish-details-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.dish-details-category-tag {
+  margin-left: auto;
+  background: #f3f4f6;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: var(--caption-size);
+  color: #4b5563;
+  font-weight: var(--weight-medium);
+}
+
+.dish-details-name {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  color: #111827;
+  word-break: break-word;
+}
+
+.dish-details-price {
+  margin: 0 0 12px 0;
+  font-size: 18px;
+  font-weight: var(--weight-bold);
+  color: #EF5C43;
+}
+
+.dish-details-avail-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.dish-details-avail-label {
+  font-size: var(--tiny-text-size);
+  font-weight: var(--weight-semibold);
+  color: #6b7280;
+  margin-right: 4px;
+}
+
+.dish-details-desc-box {
+  margin-top: 20px;
+  padding: 14px;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #f3f4f6;
+}
+
+.dish-details-desc-label {
+  font-size: var(--caption-size);
+  font-weight: var(--weight-bold);
+  color: #374151;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.dish-details-desc-text {
+  margin: 0;
+  font-size: var(--caption-size);
+  color: #4b5563;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.dish-details-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.dish-details-edit-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  border: 1.5px solid #EF5C43;
+  color: #EF5C43;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: var(--caption-size);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.dish-details-edit-header-btn:hover {
+  background: #EF5C43;
+  color: #ffffff;
+}
+
+.modal-close-icon-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  line-height: 1;
+}
+
+.modal-close-icon-btn:hover {
+  color: #111827;
+}
+
+/* Extra mobile-first responsive refinements for Kitchen Menu & Modals */
+@media (max-width: 640px) {
+  .dish-details-body {
+    padding: 16px !important;
+  }
+
+  .dish-details-meta-row {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 14px !important;
+  }
+
+  .dish-details-img-wrapper {
+    width: 110px !important;
+    height: 110px !important;
+  }
+
+  .dish-details-info {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+  }
+
+  .dish-details-badge-row {
+    justify-content: center !important;
+  }
+
+  .dish-details-category-tag {
+    margin-left: 0 !important;
+  }
+
+  .dish-details-avail-group {
+    justify-content: center !important;
+  }
+
+  .dish-details-actions {
+    flex-direction: column !important;
+    gap: 10px !important;
+    margin-top: 18px !important;
+  }
+
+  .dish-details-actions button {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+  }
+
+  .availability-checkbox-group {
+    flex-wrap: wrap !important;
+    height: auto !important;
+    gap: 12px !important;
+  }
+
+  .dish-type-radio-group {
+    height: auto !important;
+    gap: 16px !important;
+  }
+
+  .dish-modal-footer {
+    flex-direction: column !important;
+    gap: 10px !important;
+    margin-top: 24px !important;
+  }
+
+  .dish-modal-footer button {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+
+  .food-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .dash-stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .food-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { API_URL } from '../../../config';
 import { haptics } from '../../../utils/haptics';
+import authStorage from '../../../app/authStorage';
 import './Login.css';
 import logoIcon from '../../../assets/icons/Frame 123.svg';
 
@@ -40,9 +41,9 @@ const Login = ({ onLogin }) => {
       // Haptics on Login Success
       haptics.success();
 
-      // Store JWT token and user info
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      // Store JWT token and user info in session storage
+      authStorage.setToken(data.token);
+      authStorage.setUser(data.user);
 
       onLogin?.();
     } catch (err) {

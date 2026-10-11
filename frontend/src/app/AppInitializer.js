@@ -1,27 +1,21 @@
 import { API_URL } from '../config';
+import authStorage, { purgeLegacyPersistentAuth } from './authStorage';
 
 /**
  * AppInitializer handles theme setup, local settings restoration,
  * offline listeners, and JWT validation for launch flow.
  */
 export const initializeApp = async () => {
+  // Purge any legacy lingering persistent auth from localStorage
+  purgeLegacyPersistentAuth();
+
   // 1. Initialize local theme / settings
   const storedTheme = localStorage.getItem('vingo_theme') || 'light';
   document.documentElement.setAttribute('data-theme', storedTheme);
 
-  // 2. Load cached authentication token and user session
-  const token = localStorage.getItem('token');
-  const cachedUserStr = localStorage.getItem('user');
-  let cachedUser = null;
-
-  if (cachedUserStr) {
-    try {
-      cachedUser = JSON.parse(cachedUserStr);
-    } catch (e) {
-      console.warn('Corrupted cached user state, clearing session.', e);
-      localStorage.removeItem('user');
-    }
-  }
+  // 2. Load active session token and user session
+  const token = authStorage.getToken();
+  const cachedUser = authStorage.getUser();
 
   if (!token) {
     return {
@@ -61,8 +55,7 @@ export const initializeApp = async () => {
 
     if (response.status === 401 || response.status === 403) {
       // Expired or invalid token: purge auth state
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      authStorage.clear();
       return {
         isValid: false,
         user: null,

@@ -30,6 +30,7 @@ import TestPage from './pages/test/TestPage';
 import Bootstrap from './app/Bootstrap';
 import { useAuth } from './app/AuthContext';
 import { ProtectedRoute as PrivateRoute, PublicRoute } from './app/RouteGuard';
+import authStorage from './app/authStorage';
 import { haptics } from './utils/haptics';
 
 // Custom Speedometer/Dashboard SVG Icon
@@ -281,7 +282,7 @@ function App() {
     const fetchAllData = async () => {
       setIsDataLoading(true);
       try {
-        const token = localStorage.getItem('token');
+        const token = authStorage.getToken();
         const headers = { 'Authorization': `Bearer ${token}` };
 
         const [catRes, offRes, statsRes] = await Promise.all([
@@ -310,6 +311,107 @@ function App() {
     };
 
     fetchAllData();
+
+    // Dedicated silent fetcher for scan count updates (doesn't trigger full loading spinner)
+    const fetchDashboardScanCount = async () => {
+      try {
+        const token = authStorage.getToken();
+        if (!token) return;
+        const res = await fetch(`${API_URL}/api/auth/dashboard?_t=${Date.now()}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.stats && typeof data.stats.scanCount === 'number') {
+            setScanCount(data.stats.scanCount);
+          }
+        }
+      } catch (err) {
+        // Silent sync
+      }
+    };
+
+    // 1. Server-Sent Events (SSE) for instant real-time scan count sync from any device
+    const userIdentifier = currentUser.restaurant_name
+      ? currentUser.restaurant_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      : (currentUser.id ? currentUser.id.toString() : '');
+
+    let eventSource = null;
+    if (userIdentifier && typeof EventSource !== 'undefined') {
+      try {
+        eventSource = new EventSource(`${API_URL}/api/menu/public/${userIdentifier}/stream`);
+        eventSource.addEventListener('scan-updated', (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data && typeof data.scanCount === 'number') {
+              setScanCount(data.scanCount);
+            } else {
+              fetchDashboardScanCount();
+            }
+          } catch {
+            fetchDashboardScanCount();
+          }
+        });
+      } catch (err) {
+        // SSE not supported or network error
+      }
+    }
+
+    // 2. Same-browser instant cross-tab sync via BroadcastChannel
+    let broadcastChannel = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        broadcastChannel = new BroadcastChannel('thevingo_scan_updates');
+        broadcastChannel.onmessage = (event) => {
+          if (event.data?.type === 'SCAN_COUNT_UPDATED') {
+            if (typeof event.data.scanCount === 'number') {
+              setScanCount(event.data.scanCount);
+            } else {
+              fetchDashboardScanCount();
+            }
+          }
+        };
+      } catch (bcErr) {
+        // BroadcastChannel ignored
+      }
+    }
+
+    // 3. Revalidate scan count whenever user focuses or returns to the dashboard tab
+    const handleRevalidation = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchDashboardScanCount();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', handleRevalidation);
+      document.addEventListener('visibilitychange', handleRevalidation);
+    }
+
+    // 4. Fallback background polling (every 10 seconds while active)
+    const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchDashboardScanCount();
+      }
+    }, 10000);
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+      if (broadcastChannel) {
+        broadcastChannel.close();
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', handleRevalidation);
+        document.removeEventListener('visibilitychange', handleRevalidation);
+      }
+      clearInterval(pollInterval);
+    };
   }, [currentUser]);
 
   return (
@@ -330,9 +432,9 @@ function App() {
           <PublicRoute>
             <Login onLogin={() => {
               try {
-                const saved = localStorage.getItem('user');
+                const saved = authStorage.getUser();
                 if (saved) {
-                  setCurrentUser(JSON.parse(saved));
+                  setCurrentUser(saved);
                 }
               } catch (e) {
                 console.error(e);
@@ -349,9 +451,9 @@ function App() {
           <PublicRoute>
             <Register onRegister={() => {
               try {
-                const saved = localStorage.getItem('user');
+                const saved = authStorage.getUser();
                 if (saved) {
-                  setCurrentUser(JSON.parse(saved));
+                  setCurrentUser(saved);
                 }
               } catch (e) {
                 console.error(e);

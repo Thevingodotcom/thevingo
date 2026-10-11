@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { API_URL } from '../../../config';
+import authStorage from '../../../app/authStorage';
 import editIcon from '../../../assets/icons/Vector.svg';
 
 function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantName, tagline, setTagline, hotelAddress, setHotelAddress, hotelCity, setHotelCity, hotelState, setHotelState }) {
@@ -23,7 +24,7 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
 
   const handleSave = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
+    const token = authStorage.getToken();
     
     let body = {};
     if (activeModal === 'brand') {
@@ -60,7 +61,7 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
         setCurrentUser(data.user);
       }
 
-      localStorage.setItem('user', JSON.stringify(data.user));
+      authStorage.setUser(data.user);
       
       setActiveModal(null);
     } catch (err) {

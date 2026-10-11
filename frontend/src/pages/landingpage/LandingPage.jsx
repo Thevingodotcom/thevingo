@@ -11,9 +11,10 @@ import { Link } from 'react-router-dom';
 import featureUpload from '../../assets/icons/Frame 54.svg';
 import featureHybrid from '../../assets/icons/Frame 50.svg';
 import featureReprint from '../../assets/icons/Frame 54 (2).svg';
+import authStorage from '../../app/authStorage';
 
 const LandingPage = () => {
-  const token = localStorage.getItem('token');
+  const token = authStorage.getToken();
   const startPath = token ? '/dashboard' : '/login';
 
   return (
