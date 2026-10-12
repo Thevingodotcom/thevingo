@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { API_URL, DEFAULT_DISH_IMAGE } from '../../config';
+import { API_URL, DEFAULT_DISH_IMAGE, getImageUrl } from '../../config';
 import { getPersistentDeviceId } from '../../utils/device';
 import catFilterIcon from '../../assets/icons/Catagory Filter.svg';
 import filterIcon from '../../assets/icons/filterIcon.svg';
@@ -306,9 +306,13 @@ const PublicMenu = () => {
                         <div className="public-food-card-body">
                           <div className="public-food-img-wrapper">
                             <img 
-                              src={item.image || DEFAULT_DISH_IMAGE} 
+                              src={getImageUrl(item.image)} 
                               alt={item.name} 
                               className="public-food-img" 
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = DEFAULT_DISH_IMAGE;
+                              }}
                             />
                           </div>
                           <div className="public-food-details">

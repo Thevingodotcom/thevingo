@@ -1,20 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { API_URL, DEFAULT_DISH_IMAGE } from '../../../config';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { API_URL, DEFAULT_DISH_IMAGE, getImageUrl, hasDishImage } from '../../../config';
 import { haptics } from '../../../utils/haptics';
 import authStorage from '../../../app/authStorage';
 import filterIcon from '../../../assets/icons/filterIcon.svg';
-import searchIcon from '../../../assets/icons/search icon.svg';
 import addBtnIcon from '../../../assets/icons/Add.svg';
-
-// Helper to format food availability
-const getAvailabilityText = (item) => {
-  const list = [];
-  if (item.availableBreakfast) list.push('Breakfast');
-  if (item.availableLunch) list.push('Lunch');
-  if (item.availableDinner) list.push('Dinner');
-  if (list.length === 0) return 'Unavailable';
-  return list.join('/');
-};
+import DishImageField from './DishImageField';
+import MenuImportDialog from './MenuImportDialog';
+import './MenuList.css';
 
 // Inline Icons
 const ThreeDotsIcon = () => (
@@ -29,13 +21,55 @@ const FunnelIcon = () => (
   <img src={filterIcon} alt="Filter" style={{ width: '40px', height: '40px', display: 'block' }} />
 );
 
-const GlassIcon = () => (
-  <img src={searchIcon} alt="Search" style={{ width: '40px', height: '40px', display: 'block' }} />
+const SearchIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="11" cy="11" r="7"></circle>
+    <line x1="20" y1="20" x2="16.05" y2="16.05"></line>
+  </svg>
 );
+
+const CloseSmallIcon = ({ size = 12 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+    <path d="M18 6L6 18M6 6l12 12"></path>
+  </svg>
+);
+
+const ImportIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+    <polyline points="7 10 12 15 17 10"></polyline>
+    <line x1="12" y1="15" x2="12" y2="3"></line>
+  </svg>
+);
+
+const WarningIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+    <line x1="12" y1="9" x2="12" y2="13"></line>
+    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+  </svg>
+);
+
+const broadcastMenuUpdate = (payload = {}) => {
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel('thevingo_menu_updates');
+      channel.postMessage({ type: 'MENU_UPDATED', ...payload });
+      channel.close();
+    }
+  } catch {
+    // Cross-tab sync is best-effort.
+  }
+};
+
+const revokeBlobUrl = (url) => {
+  if (url && typeof url === 'string' && url.startsWith('blob:')) {
+    try { URL.revokeObjectURL(url); } catch { /* ignore */ }
+  }
+};
 
 function MenuList({ categories, setCategories }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Custom Filter Dialog States
@@ -71,7 +105,6 @@ function MenuList({ categories, setCategories }) {
   const [availBreakfast, setAvailBreakfast] = useState(true);
   const [availLunch, setAvailLunch] = useState(true);
   const [availDinner, setAvailDinner] = useState(true);
-  const [fileName, setFileName] = useState('');
   const [imageFile, setImageFile] = useState(null);
 
   // Dish Details & Edit Modal States
@@ -91,7 +124,10 @@ function MenuList({ categories, setCategories }) {
   const [editAvailDinner, setEditAvailDinner] = useState(true);
   const [editDishImage, setEditDishImage] = useState('');
   const [editImageFile, setEditImageFile] = useState(null);
-  const [editFileName, setEditFileName] = useState('');
+  // URL picked from "Suggest image" (sent as the `image` field on save)
+  const [editImageUrl, setEditImageUrl] = useState('');
+  // True when the user removed the existing image (sent as `remove_image`)
+  const [editRemoveImage, setEditRemoveImage] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState('');
 
@@ -118,21 +154,37 @@ function MenuList({ categories, setCategories }) {
     setEditAvailBreakfast(currentItem.availableBreakfast === true || currentItem.availableBreakfast === 1 || currentItem.availableBreakfast === 'true');
     setEditAvailLunch(currentItem.availableLunch === true || currentItem.availableLunch === 1 || currentItem.availableLunch === 'true');
     setEditAvailDinner(currentItem.availableDinner === true || currentItem.availableDinner === 1 || currentItem.availableDinner === 'true');
-    setEditDishImage(currentItem.image || DEFAULT_DISH_IMAGE);
+    setEditDishImage(hasDishImage(currentItem.image) ? getImageUrl(currentItem.image) : '');
     setEditImageFile(null);
-    setEditFileName('');
+    setEditImageUrl('');
+    setEditRemoveImage(false);
     setEditError('');
     setIsDetailsModalOpen(false);
     setIsEditModalOpen(true);
   };
 
-  const handleEditFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      setEditFileName(file.name);
-      setEditImageFile(file);
-      setEditDishImage(URL.createObjectURL(file));
-    }
+  const handleEditImageFile = (file) => {
+    revokeBlobUrl(editDishImage);
+    setEditImageFile(file);
+    setEditImageUrl('');
+    setEditRemoveImage(false);
+    setEditDishImage(URL.createObjectURL(file));
+  };
+
+  const handleEditImagePickUrl = (url) => {
+    revokeBlobUrl(editDishImage);
+    setEditImageFile(null);
+    setEditImageUrl(url);
+    setEditRemoveImage(false);
+    setEditDishImage(url);
+  };
+
+  const handleEditImageRemove = () => {
+    revokeBlobUrl(editDishImage);
+    setEditImageFile(null);
+    setEditImageUrl('');
+    setEditRemoveImage(true);
+    setEditDishImage('');
   };
 
   const handleEditDishSubmit = async (e) => {
@@ -167,10 +219,14 @@ function MenuList({ categories, setCategories }) {
       formData.append('availableLunch', editAvailLunch);
       formData.append('availableDinner', editAvailDinner);
 
+      // Image: new upload > picked suggestion URL > explicit removal.
+      // When untouched, no image field is sent and the backend keeps the current one.
       if (editImageFile) {
         formData.append('image', editImageFile);
-      } else if (editDishImage && !editDishImage.startsWith('blob:')) {
-        formData.append('image', editDishImage);
+      } else if (editImageUrl) {
+        formData.append('image', editImageUrl);
+      } else if (editRemoveImage) {
+        formData.append('remove_image', 'true');
       }
 
       const response = await fetch(`${API_URL}/api/menu/dishes/${selectedDish.id}`, {
@@ -185,6 +241,7 @@ function MenuList({ categories, setCategories }) {
 
       if (response.ok) {
         const updatedDishData = {
+          ...selectedDish,
           ...data.dish,
           name: editDishName.trim(),
           price: parsedPrice,
@@ -193,8 +250,11 @@ function MenuList({ categories, setCategories }) {
           availableBreakfast: editAvailBreakfast,
           availableLunch: editAvailLunch,
           availableDinner: editAvailDinner,
-          image: data.dish?.image || editDishImage
+          image: data.dish?.image ?? (editRemoveImage ? null : selectedDish.image)
         };
+        if (editRemoveImage && !editImageFile && !editImageUrl && !hasDishImage(data.dish?.image)) {
+          updatedDishData.image = null;
+        }
 
         // Update state in categories immediately
         setCategories(prev => {
@@ -223,13 +283,7 @@ function MenuList({ categories, setCategories }) {
         });
 
         // Instant cross-tab broadcast for any open public QR menu pages
-        try {
-          if (typeof BroadcastChannel !== 'undefined') {
-            const channel = new BroadcastChannel('thevingo_menu_updates');
-            channel.postMessage({ type: 'MENU_UPDATED', dishId: selectedDish.id });
-            channel.close();
-          }
-        } catch (bcErr) {}
+        broadcastMenuUpdate({ dishId: selectedDish.id });
 
         haptics?.success?.();
         setSelectedDish(updatedDishData);
@@ -313,13 +367,7 @@ function MenuList({ categories, setCategories }) {
         setSelectedDishIds([]);
 
         // Instant cross-tab broadcast
-        try {
-          if (typeof BroadcastChannel !== 'undefined') {
-            const channel = new BroadcastChannel('thevingo_menu_updates');
-            channel.postMessage({ type: 'MENU_UPDATED' });
-            channel.close();
-          }
-        } catch (bcErr) {}
+        broadcastMenuUpdate();
       } else {
         alert('Failed to delete selected dishes.');
       }
@@ -329,8 +377,31 @@ function MenuList({ categories, setCategories }) {
     }
   };
 
-  const handleDeleteCategory = async (categoryId, categoryName) => {
-    if (!window.confirm(`Are you sure you want to delete the entire category "${categoryName}" and all dishes under it?`)) return;
+  // Delete-category confirmation dialog: { id, name, dishCount } | null
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
+
+  const requestDeleteCategory = (category) => {
+    haptics?.warning?.();
+    // Count from the unfiltered list so active filters don't under-report.
+    const source = categories.find(cat => String(cat.id) === String(category.id)) || category;
+    setCategoryToDelete({
+      id: category.id,
+      name: category.name,
+      dishCount: Array.isArray(source.items) ? source.items.length : 0
+    });
+    setActiveCategoryMenu(null);
+  };
+
+  const handleCancelDeleteCategory = () => {
+    if (isDeletingCategory) return;
+    setCategoryToDelete(null);
+  };
+
+  const handleConfirmDeleteCategory = async () => {
+    if (!categoryToDelete || isDeletingCategory) return;
+    const categoryId = categoryToDelete.id;
+    setIsDeletingCategory(true);
 
     try {
       const token = authStorage.getToken();
@@ -342,23 +413,29 @@ function MenuList({ categories, setCategories }) {
       });
 
       if (response.ok) {
-        setCategories(prev => prev.filter(cat => cat.id !== categoryId.toString() && cat.id !== categoryId));
-        setActiveCategoryMenu(null);
+        setCategories(prev => prev.filter(cat => String(cat.id) !== String(categoryId)));
+        if (String(appliedCategory) === String(categoryId)) {
+          setAppliedCategory('all');
+        }
+        if (String(selectionCategoryId) === String(categoryId)) {
+          setSelectionCategoryId(null);
+          setSelectedDishIds([]);
+        }
+        setCategoryToDelete(null);
+        haptics?.success?.();
 
         // Instant cross-tab broadcast
-        try {
-          if (typeof BroadcastChannel !== 'undefined') {
-            const channel = new BroadcastChannel('thevingo_menu_updates');
-            channel.postMessage({ type: 'MENU_UPDATED' });
-            channel.close();
-          }
-        } catch (bcErr) {}
+        broadcastMenuUpdate();
       } else {
+        haptics?.error?.();
         alert('Failed to delete category.');
       }
     } catch (err) {
       console.error(err);
+      haptics?.error?.();
       alert('Error deleting category.');
+    } finally {
+      setIsDeletingCategory(false);
     }
   };
 
@@ -374,11 +451,6 @@ function MenuList({ categories, setCategories }) {
     e.preventDefault();
     if (!newItemName || !newItemPrice) return;
 
-    let defaultImg = newItemImage;
-    if (!defaultImg) {
-      defaultImg = DEFAULT_DISH_IMAGE;
-    }
-
     try {
       const token = authStorage.getToken();
       const formData = new FormData();
@@ -390,11 +462,13 @@ function MenuList({ categories, setCategories }) {
       formData.append('availableLunch', availLunch);
       formData.append('availableDinner', availDinner);
 
+      // Only send an image when the user chose one; no image => no field,
+      // so the dish is stored without a stock photo.
       if (imageFile) {
         formData.append('image', imageFile);
-      } else {
-        // Send defaultImg url in image field if no file is uploaded
-        formData.append('image', defaultImg);
+      } else if (newItemImage && !newItemImage.startsWith('blob:')) {
+        // URL picked from "Suggest image"
+        formData.append('image', newItemImage);
       }
 
       const response = await fetch(`${API_URL}/api/menu/dishes`, {
@@ -419,22 +493,16 @@ function MenuList({ categories, setCategories }) {
         setNewItemName('');
         setNewItemPrice('');
         setNewItemIsVeg(true);
+        revokeBlobUrl(newItemImage);
         setNewItemImage('');
         setImageFile(null);
         setAvailBreakfast(true);
         setAvailLunch(true);
         setAvailDinner(true);
-        setFileName('');
         setIsModalOpen(false);
 
         // Instant cross-tab broadcast for any open public QR menu pages
-        try {
-          if (typeof BroadcastChannel !== 'undefined') {
-            const channel = new BroadcastChannel('thevingo_menu_updates');
-            channel.postMessage({ type: 'MENU_UPDATED', dishId: data.dish?.id });
-            channel.close();
-          }
-        } catch (bcErr) {}
+        broadcastMenuUpdate({ dishId: data.dish?.id });
       } else {
         alert(data.message || 'Failed to create dish');
       }
@@ -444,13 +512,22 @@ function MenuList({ categories, setCategories }) {
     }
   };
 
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      setFileName(file.name);
-      setImageFile(file);
-      setNewItemImage(URL.createObjectURL(file));
-    }
+  const handleNewImageFile = (file) => {
+    revokeBlobUrl(newItemImage);
+    setImageFile(file);
+    setNewItemImage(URL.createObjectURL(file));
+  };
+
+  const handleNewImagePickUrl = (url) => {
+    revokeBlobUrl(newItemImage);
+    setImageFile(null);
+    setNewItemImage(url);
+  };
+
+  const handleNewImageRemove = () => {
+    revokeBlobUrl(newItemImage);
+    setImageFile(null);
+    setNewItemImage('');
   };
 
   const handleAddCategorySubmit = async (e) => {
@@ -481,102 +558,15 @@ function MenuList({ categories, setCategories }) {
     }
   };
 
-  const downloadTemplate = () => {
-    const headers = ['Category', 'Dish Name', 'Price', 'Veg Type (veg/non_veg)', 'Breakfast (1/0)', 'Lunch (1/0)', 'Dinner (1/0)'];
-    const row = ['Main Course', 'Paneer Butter Masala', '180', 'veg', '1', '1', '1'];
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), row.join(',')].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "vingo_menu_template.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const openImportModal = () => {
+    haptics?.light?.();
+    setIsFabMenuOpen(false);
+    setIsImportModalOpen(true);
   };
 
-  const handleImportFile = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const text = event.target.result;
-      const lines = text.split('\n');
-      if (lines.length <= 1) {
-        alert('The uploaded template is empty.');
-        return;
-      }
-
-      const token = authStorage.getToken();
-      const rows = lines.slice(1).map(line => line.split(',')).filter(row => row.length >= 2 && row[0].trim());
-      
-      try {
-        let importedCategories = [];
-        
-        for (const row of rows) {
-          const categoryName = row[0].trim();
-          const dishName = row[1].trim();
-          const price = parseFloat(row[2]) || 0;
-          const vegType = (row[3] || 'veg').trim().toLowerCase();
-          const isVeg = vegType === 'veg';
-          const availBreakfast = (row[4] || '1').trim() === '1';
-          const availLunch = (row[5] || '1').trim() === '1';
-          const availDinner = (row[6] || '1').trim() === '1';
-
-          let category = importedCategories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
-          if (!category) {
-            const catResponse = await fetch(`${API_URL}/api/menu/categories`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({ name: categoryName })
-            });
-            const catData = await catResponse.json();
-            if (catResponse.ok) {
-              category = catData.category;
-              importedCategories.push(category);
-            } else {
-              console.error('Failed to auto-create category:', categoryName);
-              continue;
-            }
-          }
-
-          const dishResponse = await fetch(`${API_URL}/api/menu/dishes`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              name: dishName,
-              price: price,
-              categoryId: category.id,
-              isVeg: isVeg,
-              image: DEFAULT_DISH_IMAGE,
-              availableBreakfast: availBreakfast,
-              availableLunch: availLunch,
-              availableDinner: availDinner
-            })
-          });
-          const dishData = await dishResponse.json();
-          if (dishResponse.ok) {
-            category.items.push(dishData.dish);
-          }
-        }
-
-        setCategories(prev => [...prev, ...importedCategories]);
-        setIsImportModalOpen(false);
-        alert('Menu imported successfully!');
-      } catch (err) {
-        console.error('Import error:', err);
-        alert('Error parsing or saving menu items.');
-      }
-    };
-    reader.readAsText(file);
-  };
+  // The import dialog (MenuImportDialog) validates the whole CSV before any
+  // request is sent, shows progress while importing and reports failures.
+  const closeImportModal = useCallback(() => setIsImportModalOpen(false), []);
 
   const filteredCategories = categories
     .filter(cat => {
@@ -623,12 +613,45 @@ function MenuList({ categories, setCategories }) {
       };
     });
 
-  const isAnyFilterActive = searchQuery.trim() || 
-                            appliedCategory !== 'all' || 
-                            appliedDishType !== 'all' || 
-                            !appliedAvailability.Breakfast || 
-                            !appliedAvailability.Lunch || 
-                            !appliedAvailability.Dinner;
+  // Active filter chips (each removable individually)
+  const activeFilterChips = [];
+  if (appliedCategory !== 'all') {
+    const filterCat = categories.find(cat => String(cat.id) === String(appliedCategory) || cat.name === appliedCategory);
+    activeFilterChips.push({
+      key: 'category',
+      label: 'Category',
+      value: filterCat?.name || String(appliedCategory),
+      onRemove: () => setAppliedCategory('all')
+    });
+  }
+  if (appliedDishType !== 'all') {
+    activeFilterChips.push({
+      key: 'dishType',
+      label: 'Type',
+      value: appliedDishType === 'veg' ? 'Veg' : 'Non Veg',
+      onRemove: () => setAppliedDishType('all')
+    });
+  }
+  const enabledMealTimes = ['Breakfast', 'Lunch', 'Dinner'].filter(slot => appliedAvailability[slot]);
+  // None checked behaves like "all" in the filter logic, so only 1–2 checked is a real filter.
+  if (enabledMealTimes.length > 0 && enabledMealTimes.length < 3) {
+    activeFilterChips.push({
+      key: 'availability',
+      label: 'Available',
+      value: enabledMealTimes.join(', '),
+      onRemove: () => setAppliedAvailability({ Breakfast: true, Lunch: true, Dinner: true })
+    });
+  }
+  const hasActiveFilters = activeFilterChips.length > 0;
+
+  const handleClearAllFilters = () => {
+    haptics?.light?.();
+    setAppliedCategory('all');
+    setAppliedAvailability({ Breakfast: true, Lunch: true, Dinner: true });
+    setAppliedDishType('all');
+  };
+
+  const isAnyFilterActive = Boolean(searchQuery.trim()) || hasActiveFilters;
 
   const displayCategories = isAnyFilterActive
     ? filteredCategories.filter(cat => cat.items.length > 0)
@@ -636,46 +659,86 @@ function MenuList({ categories, setCategories }) {
 
   return (
     <>
-      <div className="search-filter-container">
-        <div className="search-bar-wrapper">
+      <div className="search-filter-container menu-toolbar">
+        <div className="search-bar-wrapper menu-search-wrapper">
+          <span className="menu-search-icon">
+            <SearchIcon />
+          </span>
           <input
             type="text"
             placeholder="Search menu items..."
             className="search-input landing_placeholder"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && searchQuery) {
+                e.preventDefault();
+                setSearchQuery('');
+              }
+            }}
+            aria-label="Search menu items"
           />
-          <button className="search-btn">
-            <GlassIcon />
-          </button>
+          {searchQuery && (
+            <button
+              type="button"
+              className="menu-search-clear"
+              onClick={() => setSearchQuery('')}
+              aria-label="Clear search"
+              title="Clear search"
+            >
+              <CloseSmallIcon size={13} />
+            </button>
+          )}
         </div>
 
         <button
-          className={`filter-btn ${filterType !== 'all' ? 'active' : ''}`}
+          type="button"
+          className="filter-btn menu-filter-btn"
           onClick={toggleFilter}
-          title={`Filtering: ${filterType}. Click to change.`}
+          title={hasActiveFilters ? `${activeFilterChips.length} filter${activeFilterChips.length === 1 ? '' : 's'} applied. Click to change.` : 'Filter dishes'}
+          aria-label="Filter dishes"
         >
           <FunnelIcon />
+          {hasActiveFilters && <span className="menu-filter-btn-dot" aria-hidden="true"></span>}
         </button>
-        {(appliedCategory !== 'all' || appliedDishType !== 'all' || !appliedAvailability.Breakfast || !appliedAvailability.Lunch || !appliedAvailability.Dinner) && (
-          <button 
-            onClick={() => {
-              setAppliedCategory('all');
-              setAppliedAvailability({ Breakfast: true, Lunch: true, Dinner: true });
-              setAppliedDishType('all');
-            }}
-            className="landing_anchor"
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#EF5C43',
-              cursor: 'pointer'
-            }}
-          >
-            Clear Filters ✕
-          </button>
-        )}
+
+        <button
+          type="button"
+          className="menu-import-btn"
+          onClick={openImportModal}
+          title="Import dishes from a CSV file"
+        >
+          <ImportIcon />
+          Import menu
+        </button>
       </div>
+
+      {hasActiveFilters && (
+        <div className="menu-filter-chips" aria-label="Active filters">
+          <span className="menu-filter-chips-label">Filtered by</span>
+          {activeFilterChips.map(chip => (
+            <span key={chip.key} className="menu-filter-chip">
+              <span className="menu-filter-chip-key">{chip.label}:</span>
+              {chip.value}
+              <button
+                type="button"
+                className="menu-filter-chip-remove"
+                onClick={() => {
+                  haptics?.light?.();
+                  chip.onRemove();
+                }}
+                aria-label={`Remove ${chip.label} filter`}
+                title={`Remove ${chip.label} filter`}
+              >
+                <CloseSmallIcon size={10} />
+              </button>
+            </span>
+          ))}
+          <button type="button" className="menu-filter-clear-all" onClick={handleClearAllFilters}>
+            Clear all
+          </button>
+        </div>
+      )}
 
       {categories.length > 0 ? (
         displayCategories.length > 0 ? (
@@ -712,7 +775,7 @@ function MenuList({ categories, setCategories }) {
                         className="category-dropdown-item delete-option landing_body"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteCategory(category.id, category.name);
+                          requestDeleteCategory(category);
                         }}
                       >
                         Delete category
@@ -749,7 +812,15 @@ function MenuList({ categories, setCategories }) {
                       )}
                       <div className="food-card-body">
                         <div className="food-img-wrapper">
-                          <img src={item.image} alt={item.name} className="food-img" />
+                          <img 
+                            src={getImageUrl(item.image)} 
+                            alt={item.name} 
+                            className="food-img" 
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = DEFAULT_DISH_IMAGE;
+                            }}
+                          />
                         </div>
                         <div className="food-details">
                           <h4 className="food-name landing_body">{item.name}</h4>
@@ -781,25 +852,10 @@ function MenuList({ categories, setCategories }) {
         )
       ) : (
         /* Empty State: Import Menu */
-        <div className="import-menu-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '350px', background: 'var(--bg-white)', borderRadius: '12px', padding: '40px', marginTop: '20px' }}>
-          <button 
-            type="button" 
-            onClick={() => setIsImportModalOpen(true)}
-            style={{
-              padding: '16px 32px',
-              background: '#EF5C43',
-              color: 'var(--bg-white)',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: 'var(--body-large-size)',
-              fontWeight: 'var(--weight-bold)',
-              cursor: 'pointer',
-              boxShadow: '0 4px 6px -1px rgba(239, 92, 67, 0.2)',
-              transition: 'transform 0.15s, background-color 0.15s'
-            }}
-            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e04f36'}
-            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#EF5C43'}
-          >
+        <div className="import-menu-container menu-empty-import">
+          <h4 className="menu-empty-import-title">Your menu is empty</h4>
+          <p className="menu-empty-import-desc">Import your dishes from a CSV file, or add them one by one with the + button.</p>
+          <button type="button" className="menu-empty-import-btn" onClick={openImportModal}>
             Import menu
           </button>
         </div>
@@ -823,7 +879,7 @@ function MenuList({ categories, setCategories }) {
               boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
               fontSize: 'var(--body-large-size)',
               fontWeight: 'var(--weight-bold)',
-              color: '#374151'
+              color: 'var(--text-dark)'
             }}
             title="Cancel Selection"
           >
@@ -882,6 +938,13 @@ function MenuList({ categories, setCategories }) {
                 }}
               >
                 Item
+              </button>
+              <button
+                type="button"
+                className="fab-option-item"
+                onClick={openImportModal}
+              >
+                Import menu
               </button>
             </div>
           )}
@@ -1022,19 +1085,14 @@ function MenuList({ categories, setCategories }) {
               {/* Row 3: Upload image & Category select */}
               <div className="dish-form-grid-row" style={{ marginTop: '24px' }}>
                 <div className="dish-form-group">
-                  <label className="dish-label">Upload image</label>
-                  <div className="dish-file-upload">
-                    <label className="file-upload-btn-label">
-                      Choose image
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
-                    <span className="file-upload-name-text">{fileName || 'No file chosen'}</span>
-                  </div>
+                  <span className="dish-label">Dish image</span>
+                  <DishImageField
+                    previewSrc={newItemImage}
+                    dishName={newItemName}
+                    onSelectFile={handleNewImageFile}
+                    onPickUrl={handleNewImagePickUrl}
+                    onRemove={handleNewImageRemove}
+                  />
                 </div>
 
                 <div className="dish-form-group">
@@ -1052,7 +1110,7 @@ function MenuList({ categories, setCategories }) {
               </div>
 
               {/* Footer Save & Cancel Buttons */}
-              <div className="dish-modal-footer">
+              <div className="dish-modal-footer menu-sticky-footer">
                 <button type="submit" className="btn-save-dish">Save dish</button>
                 <button type="button" className="btn-cancel-dish" onClick={() => setIsModalOpen(false)}>Cancel</button>
               </div>
@@ -1067,30 +1125,15 @@ function MenuList({ categories, setCategories }) {
           <div className="modal-content dish-modal-content dish-details-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header dish-modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 className="modal-title dish-modal-title landing_heading2">Dish details</h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button
-                  type="button"
-                  className="dish-details-edit-header-btn"
-                  onClick={() => handleOpenEditModal(selectedDish, selectedDishCategory)}
-                  aria-label="Edit"
-                  title="Edit dish"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                  </svg>
-                  <span>Edit</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsDetailsModalOpen(false)}
-                  className="modal-close-icon-btn"
-                  title="Close"
-                  aria-label="Close modal"
-                >
-                  ✕
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsDetailsModalOpen(false)}
+                className="modal-close-icon-btn"
+                title="Close"
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
             </div>
 
             <div className="dish-details-body">
@@ -1098,9 +1141,13 @@ function MenuList({ categories, setCategories }) {
               <div className="dish-details-meta-row">
                 <div className="dish-details-img-wrapper">
                   <img
-                    src={selectedDish.image || DEFAULT_DISH_IMAGE}
+                    src={getImageUrl(selectedDish.image)}
                     alt={selectedDish.name}
                     className="dish-details-img"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = DEFAULT_DISH_IMAGE;
+                    }}
                   />
                 </div>
 
@@ -1132,37 +1179,13 @@ function MenuList({ categories, setCategories }) {
                     <span className="dish-details-avail-label">
                       Availability:
                     </span>
-                    <span style={{
-                      padding: '2px 8px',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      fontWeight: 'var(--weight-medium)',
-                      backgroundColor: selectedDish.availableBreakfast ? '#ecfdf5' : '#f3f4f6',
-                      color: selectedDish.availableBreakfast ? '#059669' : '#9ca3af',
-                      border: `1px solid ${selectedDish.availableBreakfast ? '#a7f3d0' : '#e5e7eb'}`
-                    }}>
+                    <span className={`dish-avail-badge${selectedDish.availableBreakfast ? ' is-available' : ''}`}>
                       Breakfast
                     </span>
-                    <span style={{
-                      padding: '2px 8px',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      fontWeight: 'var(--weight-medium)',
-                      backgroundColor: selectedDish.availableLunch ? '#ecfdf5' : '#f3f4f6',
-                      color: selectedDish.availableLunch ? '#059669' : '#9ca3af',
-                      border: `1px solid ${selectedDish.availableLunch ? '#a7f3d0' : '#e5e7eb'}`
-                    }}>
+                    <span className={`dish-avail-badge${selectedDish.availableLunch ? ' is-available' : ''}`}>
                       Lunch
                     </span>
-                    <span style={{
-                      padding: '2px 8px',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      fontWeight: 'var(--weight-medium)',
-                      backgroundColor: selectedDish.availableDinner ? '#ecfdf5' : '#f3f4f6',
-                      color: selectedDish.availableDinner ? '#059669' : '#9ca3af',
-                      border: `1px solid ${selectedDish.availableDinner ? '#a7f3d0' : '#e5e7eb'}`
-                    }}>
+                    <span className={`dish-avail-badge${selectedDish.availableDinner ? ' is-available' : ''}`}>
                       Dinner
                     </span>
                   </div>
@@ -1215,7 +1238,7 @@ function MenuList({ categories, setCategories }) {
               <button
                 type="button"
                 onClick={() => !editLoading && setIsEditModalOpen(false)}
-                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6b7280', padding: '4px' }}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px' }}
                 disabled={editLoading}
                 title="Close"
                 aria-label="Close edit modal"
@@ -1226,7 +1249,7 @@ function MenuList({ categories, setCategories }) {
 
             <form onSubmit={handleEditDishSubmit} className="dish-modal-form">
               {editError && (
-                <div style={{ padding: '10px 14px', backgroundColor: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '6px', color: '#b91c1c', fontSize: 'var(--caption-size)', marginBottom: '16px' }}>
+                <div className="dish-form-error-banner" style={{ padding: '10px 14px', backgroundColor: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '6px', color: '#b91c1c', fontSize: 'var(--caption-size)', marginBottom: '16px' }}>
                   {editError}
                 </div>
               )}
@@ -1354,27 +1377,15 @@ function MenuList({ categories, setCategories }) {
               {/* Row 4: Upload image & Category select */}
               <div className="dish-form-grid-row" style={{ marginTop: '20px' }}>
                 <div className="dish-form-group">
-                  <label className="dish-label">Dish image</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {editDishImage && (
-                      <div style={{ width: '42px', height: '42px', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, border: '1px solid #e5e7eb' }}>
-                        <img src={editDishImage} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      </div>
-                    )}
-                    <div className="dish-file-upload" style={{ flex: 1 }}>
-                      <label className="file-upload-btn-label">
-                        Choose image
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleEditFileChange}
-                          style={{ display: 'none' }}
-                          disabled={editLoading}
-                        />
-                      </label>
-                      <span className="file-upload-name-text">{editFileName || 'Keep current image'}</span>
-                    </div>
-                  </div>
+                  <span className="dish-label">Dish image</span>
+                  <DishImageField
+                    previewSrc={editDishImage}
+                    dishName={editDishName}
+                    disabled={editLoading}
+                    onSelectFile={handleEditImageFile}
+                    onPickUrl={handleEditImagePickUrl}
+                    onRemove={handleEditImageRemove}
+                  />
                 </div>
 
                 <div className="dish-form-group">
@@ -1393,8 +1404,8 @@ function MenuList({ categories, setCategories }) {
                 </div>
               </div>
 
-              {/* Footer Save & Cancel Buttons */}
-              <div className="dish-modal-footer">
+              {/* Footer Save & Cancel Buttons (the only action bar in the edit form) */}
+              <div className="dish-modal-footer menu-sticky-footer">
                 <button type="submit" className="btn-save-dish" disabled={editLoading}>
                   {editLoading ? 'Saving changes...' : 'Save changes'}
                 </button>
@@ -1445,54 +1456,63 @@ function MenuList({ categories, setCategories }) {
       )}
 
       {isImportModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '500px', padding: '24px' }}>
-            <div className="modal-header" style={{ borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
-              <h3 className="modal-title" style={{ fontSize: 'var(--body-large-size)', fontWeight: 'var(--weight-bold)', color: 'var(--text-dark)' }}>Import Menu from Excel/CSV</h3>
-              <button className="modal-close-btn" style={{ fontSize: 'var(--section-title-size)', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text-muted)' }} onClick={() => setIsImportModalOpen(false)}>×</button>
+        <MenuImportDialog
+          categories={categories}
+          setCategories={setCategories}
+          onClose={closeImportModal}
+          onMenuChanged={broadcastMenuUpdate}
+        />
+      )}
+
+      {/* Delete Category Confirmation */}
+      {categoryToDelete && (
+        <div className="modal-overlay" onClick={handleCancelDeleteCategory}>
+          <div
+            className="category-modal-content"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-category-title"
+            aria-describedby="delete-category-desc"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') handleCancelDeleteCategory();
+            }}
+          >
+            <div className="category-modal-header">
+              <h3 id="delete-category-title" className="category-modal-title">Delete category?</h3>
             </div>
 
-            <div style={{ marginTop: '16px', fontSize: 'var(--body-small-size)', color: '#374151', lineHeight: '1.6' }}>
-              <p style={{ fontWeight: 'var(--weight-semibold)', marginBottom: '8px' }}>Instructions:</p>
-              <ol style={{ paddingLeft: '20px', margin: '0 0 16px 0', color: '#4b5563' }}>
-                <li>Download the Excel template using the button below.</li>
-                <li>Add your menu details, ensuring columns are formatted correctly.</li>
-                <li>Save the completed file as a <strong>.csv</strong> file.</li>
-                <li>Click "Choose CSV File" to select and import your menu.</li>
-              </ol>
+            <div className="menu-confirm-body">
+              <p id="delete-category-desc" className="menu-confirm-text">
+                Are you sure you want to delete <strong>"{categoryToDelete.name}"</strong>?
+              </p>
+              <div className="menu-confirm-warning">
+                <WarningIcon />
+                <span>
+                  {categoryToDelete.dishCount > 0
+                    ? `This will also permanently delete the ${categoryToDelete.dishCount} dish${categoryToDelete.dishCount === 1 ? '' : 'es'} in this category. This can't be undone.`
+                    : "This category has no dishes. This can't be undone."}
+                </span>
+              </div>
 
-              <button
-                type="button"
-                onClick={downloadTemplate}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  background: '#EF5C43',
-                  color: 'var(--bg-white)',
-                  border: 'none',
-                  borderRadius: '6px',
-                  fontWeight: 'var(--weight-semibold)',
-                  cursor: 'pointer',
-                  marginBottom: '20px',
-                  boxShadow: '0 4px 6px -1px rgba(239, 92, 67, 0.1)',
-                  transition: 'background-color 0.15s'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#e04f36'}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#EF5C43'}
-              >
-                Download Excel/CSV Template
-              </button>
-
-              <div style={{ border: '2px dashed #d1d5db', padding: '24px', borderRadius: '8px', textAlign: 'center', background: '#f9fafb' }}>
-                <label className="file-upload-btn-label" style={{ display: 'inline-block', padding: '10px 20px', background: '#EF5C43', color: 'var(--bg-white)', borderRadius: '4px', cursor: 'pointer', fontWeight: 'var(--weight-semibold)', boxShadow: '0 2px 4px rgba(239, 92, 67, 0.1)' }}>
-                  Choose CSV File
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={handleImportFile}
-                    style={{ display: 'none' }}
-                  />
-                </label>
+              <div className="category-modal-footer">
+                <button
+                  type="button"
+                  className="btn-create-category menu-btn-danger"
+                  onClick={handleConfirmDeleteCategory}
+                  disabled={isDeletingCategory}
+                >
+                  {isDeletingCategory ? 'Deleting…' : 'Delete'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-cancel-category"
+                  onClick={handleCancelDeleteCategory}
+                  disabled={isDeletingCategory}
+                  autoFocus
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>

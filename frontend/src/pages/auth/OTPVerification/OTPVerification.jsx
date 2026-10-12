@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { API_URL } from '../../../config';
+import useResendTimer, { formatCountdown } from '../useResendTimer';
 import './OTPVerification.css';
 
 const OTPVerification = () => {
@@ -9,14 +10,17 @@ const OTPVerification = () => {
   const [otp, setOtp] = useState(new Array(6).fill(''));
   const [activeOTPIndex, setActiveOTPIndex] = useState(0);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [success, setSuccess] = useState(location.state?.message || '');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  
+  // An OTP was just sent before arriving here, so the resend cooldown starts immediately.
+  const { secondsLeft, canResend, restart: restartResendTimer } = useResendTimer();
+
   const inputRef = useRef(null);
+  const submittingRef = useRef(false);
 
   // Extract email and type from navigation state
-  const email = location.state?.email || 'noreply@thevingo.com';
+  const email = location.state?.email;
   const type = location.state?.type || 'registration';
 
   const handleOnChange = ({ target }) => {
@@ -68,6 +72,7 @@ const OTPVerification = () => {
 
   const verifyOTP = async (e) => {
     e?.preventDefault();
+    if (submittingRef.current) return;
     const otpValue = otp.join('');
     
     if (otpValue.length < 6) {
@@ -75,8 +80,10 @@ const OTPVerification = () => {
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     setError('');
+    setSuccess('');
     
     try {
       const response = await fetch(`${API_URL}/api/auth/verify-otp`, {
@@ -88,28 +95,30 @@ const OTPVerification = () => {
       const data = await response.json();
       
       if (response.ok) {
-        setSuccess('OTP verified successfully!');
-        // Small delay to show success message before redirecting
-        setTimeout(() => {
-          if (type === 'reset') {
-            navigate('/reset-password', { state: { email, otp: otpValue } });
-          } else {
-            navigate('/login');
-          }
-        }, 1500);
-      } else {
-        setError(data.message || 'Invalid OTP. Please try again.');
-        setOtp(new Array(6).fill(''));
-        setActiveOTPIndex(0);
+        // Move on immediately; the next screen shows the confirmation message.
+        if (type === 'reset') {
+          navigate('/reset-password', {
+            replace: true,
+            state: { email, otp: otpValue, message: 'OTP verified. Please set your new password.' }
+          });
+        } else {
+          navigate('/login', { replace: true, state: { message: 'Email verified successfully. Please log in.' } });
+        }
+        return;
       }
-    } catch (err) {
+      setError(data.message || 'Invalid OTP. Please try again.');
+      setOtp(new Array(6).fill(''));
+      setActiveOTPIndex(0);
+    } catch {
       setError('Something went wrong. Please try again later.');
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
 
   const resendOTP = async () => {
+    if (!canResend || resending) return;
     setResending(true);
     setError('');
     setSuccess('');
@@ -126,15 +135,21 @@ const OTPVerification = () => {
         setSuccess('A new OTP has been sent to your email.');
         setOtp(new Array(6).fill(''));
         setActiveOTPIndex(0);
+        restartResendTimer();
       } else {
         setError(data.message || 'Failed to resend OTP.');
       }
-    } catch (err) {
+    } catch {
       setError('Something went wrong. Please try again later.');
     } finally {
       setResending(false);
     }
   };
+
+  // Without an email (e.g. page opened directly) there is nothing to verify.
+  if (!email) {
+    return <Navigate to={type === 'reset' ? '/forgot-password' : '/register'} replace />;
+  }
 
   return (
     <div className="otp-verification-container">
@@ -180,9 +195,19 @@ const OTPVerification = () => {
         </form>
 
         <p className="otp-resend landing_body">
-          Didn't receive the code? 
-          <button onClick={resendOTP} disabled={resending} className="landing_anchor">
-            {resending ? 'Sending...' : 'Resend OTP'}
+          Didn't receive the code?
+          <button
+            type="button"
+            onClick={resendOTP}
+            disabled={!canResend || resending || loading}
+            className="landing_anchor"
+            aria-live="polite"
+          >
+            {resending
+              ? 'Sending...'
+              : canResend
+                ? 'Resend OTP'
+                : `Resend OTP in ${formatCountdown(secondsLeft)}`}
           </button>
         </p>
       </div>

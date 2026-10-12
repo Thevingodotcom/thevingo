@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
 import Login from './Login';
 
@@ -68,5 +68,16 @@ describe('Login Component', () => {
     await waitFor(() => {
       expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
     });
+  });
+
+  it('links to account creation and shows a handed-over success message', () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { message: 'Password reset successfully.' } }]}>
+        <Login onLogin={() => {}} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('link', { name: /Create a free account/i })).toHaveAttribute('href', '/register');
+    expect(screen.getByText('Password reset successfully.')).toBeInTheDocument();
   });
 });

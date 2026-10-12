@@ -1,0 +1,84 @@
+/* Profile photo control in the "User details" card */
+
+.settings-photo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.settings-photo .settings-photo__avatar {
+  width: 56px;
+  height: 56px;
+  font-size: var(--body-large-size);
+}
+
+.settings-photo__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.settings-photo__btn {
+  font-family: 'Inter', sans-serif;
+  font-size: var(--caption-size);
+  font-weight: var(--weight-semibold);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--primary);
+  background-color: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.settings-photo__btn:hover:not(:disabled) {
+  background-color: var(--primary-light);
+}
+
+.settings-photo__btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.settings-photo__btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.settings-photo__btn--danger {
+  color: #ef4444;
+  border-color: #fca5a5;
+}
+
+.settings-photo__btn--danger:hover:not(:disabled) {
+  background-color: #fef2f2;
+}
+
+.settings-photo__hint {
+  margin: 8px 0 0 0;
+  font-size: var(--caption-size);
+  color: var(--text-muted);
+}
+
+.settings-photo__error {
+  margin: 6px 0 0 0;
+  font-size: var(--caption-size);
+  color: #b91c1c;
+}
+
+@media (min-width: 769px) {
+  .settings-photo__hint,
+  .settings-photo__error {
+    padding-left: 180px;
+  }
+}
+
+/* Dark theme (dashboard-scoped, see index.css DARK THEME section) */
+.app-container[data-theme="dark"] .settings-photo__btn--danger:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.15);
+}
+
+.app-container[data-theme="dark"] .settings-photo__error {
+  color: #f87171;
+}

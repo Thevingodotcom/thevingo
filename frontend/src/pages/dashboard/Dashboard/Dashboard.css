@@ -1,0 +1,42 @@
+/* Stat cards rendered as <button> elements: reset native button styling so they keep
+   the .dash-stat-card look from index.css, and add keyboard focus/active states. */
+.dash-stat-card--link {
+  width: 100%;
+  border: none;
+  margin: 0;
+  font: inherit;
+  text-align: left;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.dash-stat-card--link:hover {
+  background-color: var(--primary-hover);
+}
+
+.dash-stat-card--link:active {
+  transform: translateY(0);
+}
+
+.dash-stat-card--link:focus-visible {
+  outline: 3px solid var(--primary-light);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px var(--primary);
+}
+
+/* Dark theme (dashboard-scoped, see index.css DARK THEME section): the focus
+   ring's inner "gap" color should match the dark page background instead of
+   white, otherwise it reads as a bright halo around the card. */
+.app-container[data-theme="dark"] .dash-stat-card--link:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg-main), 0 0 0 4px var(--primary);
+}
+
+.dash-stat-card--link:hover .dash-card-right,
+.dash-stat-card--link:focus-visible .dash-card-right {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+.dash-stat-card--link .dash-card-right {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}

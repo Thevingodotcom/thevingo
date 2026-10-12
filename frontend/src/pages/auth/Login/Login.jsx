@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { API_URL } from '../../../config';
 import { haptics } from '../../../utils/haptics';
 import authStorage from '../../../app/authStorage';
@@ -7,6 +7,9 @@ import './Login.css';
 import logoIcon from '../../../assets/icons/Frame 123.svg';
 
 const Login = ({ onLogin }) => {
+  const location = useLocation();
+  // Success message handed over from another screen (e.g. after a password reset)
+  const flashMessage = location.state?.message || '';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -75,6 +78,9 @@ const Login = ({ onLogin }) => {
         {/* Right Column (Form) */}
         <form className="login-card__right" onSubmit={handleSubmit}>
           {error && <div className="login-error-msg landing_body">{error}</div>}
+          {!error && flashMessage && (
+            <div className="login-success-msg landing_body" role="status">{flashMessage}</div>
+          )}
 
           <div className="login-form-group">
             <input
@@ -128,6 +134,11 @@ const Login = ({ onLogin }) => {
               Forgot password?
             </Link>
           </div>
+
+          <p className="login-switch-text landing_body">
+            New to Vingo?{' '}
+            <Link to="/register" className="login-switch-link landing_anchor">Create a free account</Link>
+          </p>
         </form>
       </div>
     </div>

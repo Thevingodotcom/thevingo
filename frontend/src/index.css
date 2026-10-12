@@ -145,25 +145,6 @@ body {
   border: 1px solid var(--border);
 }
 
-.navbar-logout-btn {
-  font-family: 'Inter', sans-serif;
-  background-color: transparent;
-  color: #ef4444;
-  border: 1px solid #fee2e2;
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: var(--caption-size);
-  font-weight: var(--weight-semibold);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-left: 8px;
-}
-
-.navbar-logout-btn:hover {
-  background-color: #fef2f2;
-  border-color: #fca5a5;
-}
-
 /* Layout Main Body */
 .main-layout {
   display: flex;
@@ -820,6 +801,30 @@ body {
   max-width: 100%;
 }
 
+.offer-modal-content {
+  max-width: 500px;
+}
+
+.offer-duration-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.offer-duration-separator {
+  color: var(--text-muted);
+  font-size: var(--body-small-size);
+  font-weight: var(--weight-medium);
+  text-align: center;
+}
+
+.offer-duration-row .form-input[type="date"] {
+  padding: 0 10px;
+  min-width: 0;
+  width: 100%;
+}
+
 .offers-list {
   display: flex;
   flex-direction: column;
@@ -918,6 +923,57 @@ body {
 }
 
 .offer-toggle-switch input:checked+.offer-toggle-slider:before {
+  transform: translateX(16px);
+}
+
+/* Generic theme (dark mode) toggle switch - reused in Settings "Appearance"
+   and in the UserMenu dropdown (see ThemeToggle.jsx) */
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.theme-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.theme-switch-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #e5e7eb;
+  transition: .3s;
+  border-radius: 34px;
+  border: 1px solid #d1d5db;
+}
+
+.theme-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.theme-switch input:checked+.theme-switch-slider {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.theme-switch input:checked+.theme-switch-slider:before {
   transform: translateX(16px);
 }
 
@@ -1882,12 +1938,6 @@ body {
     gap: 8px;
   }
 
-  .navbar-logout-btn {
-    padding: 4px 8px;
-    font-size: var(--badge-size);
-    margin-left: 4px;
-  }
-
   .hamburger-btn {
     display: none !important; /* Hide top hamburger toggle as bottom navigation is active */
   }
@@ -2480,5 +2530,434 @@ body {
 @media (max-width: 380px) {
   .food-grid {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* ==========================================================================
+   DARK THEME (dashboard app only)
+
+   Scope: this product's dark mode covers only the authenticated dashboard
+   (DashboardLayout's .app-container and everything rendered inside it -
+   navbar, sidebar, UserMenu, Dashboard, Kitchen menu, Offers, Distribution,
+   Settings, and all their modals/FAB menus, which mount inside
+   .content-wrapper / .main-layout, themselves inside .app-container).
+
+   The toggle (Settings "Appearance" card + UserMenu dropdown, both backed by
+   src/app/ThemeContext.jsx) sets `data-theme="dark"` on the .app-container
+   element itself - NOT on :root / <html>. That is deliberate: the public
+   landing page, pricing/product pages, auth pages (Login/Register/OTP/
+   Forgot/Reset password) and the QR-scanned PublicMenu are out of scope and
+   must stay light-only. Redefining --bg-main/--text-dark/etc. on :root would
+   leak into those pages too, since they reuse the same CSS custom
+   properties. Scoping the redefinition to `.app-container[data-theme="dark"]`
+   keeps the cascade contained to the dashboard subtree only.
+   ========================================================================== */
+.app-container[data-theme="dark"] {
+  --primary: #f05a28;
+  --primary-hover: #ff7a4d;
+  --primary-light: rgba(240, 90, 40, 0.22);
+  --bg-main: #121212;
+  --bg-white: #1e1e1e;
+  --text-dark: #f3f4f6;
+  --text-muted: #a1a1aa;
+  --border: #33343a;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- Navbar / Sidebar ---------- */
+.app-container[data-theme="dark"] .logo-text span.black {
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .user-name {
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .user-avatar {
+  background-color: #2a2b31;
+}
+
+.app-container[data-theme="dark"] .sidebar.collapsed .sidebar-text {
+  color: #b7b9c2;
+}
+
+.app-container[data-theme="dark"] .sidebar.collapsed .sidebar-item.active .sidebar-text {
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .sidebar-item {
+  color: #c7c9d1;
+}
+
+.app-container[data-theme="dark"] .sidebar-item.active {
+  color: var(--text-dark);
+}
+
+/* Kitchen menu / Offers / Distribution / Setting icons are flat-black SVG
+   files loaded via <img src>, so they can't pick up `color: currentColor`
+   like the inline Dashboard icon does. Recolor them to white for dark mode:
+   brightness(0) collapses the opaque black shape to pure black, invert(1)
+   flips that to white, and transparent pixels stay transparent either way. */
+.app-container[data-theme="dark"] .sidebar-icon img {
+  filter: brightness(0) invert(1);
+}
+
+.app-container[data-theme="dark"] .hamburger-btn:hover {
+  background-color: #26272d;
+}
+
+/* ---------- Category section & dropdown ---------- */
+.app-container[data-theme="dark"] .category-title {
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .category-options-btn:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.app-container[data-theme="dark"] .category-dropdown-menu {
+  background-color: #222329;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55);
+  border-color: var(--border);
+}
+
+.app-container[data-theme="dark"] .category-dropdown-item {
+  color: #d4d5dc;
+}
+
+.app-container[data-theme="dark"] .category-dropdown-item:hover {
+  background-color: #2b2c33;
+}
+
+.app-container[data-theme="dark"] .category-dropdown-item.delete-option {
+  color: #f87171;
+}
+
+.app-container[data-theme="dark"] .category-dropdown-item.delete-option:hover {
+  background-color: rgba(239, 68, 68, 0.15);
+}
+
+.app-container[data-theme="dark"] .dish-select-checkbox-wrapper {
+  background-color: rgba(20, 20, 20, 0.85);
+}
+
+/* ---------- Food grid & cards ---------- */
+.app-container[data-theme="dark"] .food-card {
+  border-color: var(--border);
+}
+
+.app-container[data-theme="dark"] .food-card:hover {
+  box-shadow: 0 4px 10px -1px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.4);
+}
+
+.app-container[data-theme="dark"] .food-img-wrapper {
+  background-color: #26272d;
+  border-color: #26272d;
+}
+
+.app-container[data-theme="dark"] .food-name,
+.app-container[data-theme="dark"] .food-price {
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .food-card-footer {
+  background-color: #2a2b31;
+  color: #c7c9d1;
+  border-top-color: #2a2b31;
+}
+
+.app-container[data-theme="dark"] .category-empty-state {
+  background-color: #1a1b20 !important;
+}
+
+/* ---------- Forms / buttons / modals (shared) ---------- */
+.app-container[data-theme="dark"] .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.app-container[data-theme="dark"] .form-label {
+  color: #c7c9d1;
+}
+
+.app-container[data-theme="dark"] .form-input,
+.app-container[data-theme="dark"] .form-select {
+  border-color: #3a3b42;
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .form-input::placeholder {
+  color: #74757e;
+}
+
+.app-container[data-theme="dark"] .btn-secondary {
+  background-color: #2a2b31;
+  color: #d4d5dc;
+}
+
+.app-container[data-theme="dark"] .btn-secondary:hover {
+  background-color: #34353c;
+}
+
+.app-container[data-theme="dark"] .mock-page-title,
+.app-container[data-theme="dark"] .stat-value {
+  color: var(--text-dark);
+}
+
+/* ---------- Offers page ---------- */
+.app-container[data-theme="dark"] .offer-row-card {
+  border-color: #33343a;
+}
+
+.app-container[data-theme="dark"] .offer-row-card:hover {
+  border-color: #45464e;
+}
+
+.app-container[data-theme="dark"] .offer-row-checkbox {
+  border-color: #4b4c54;
+  background-color: #1e1e1e;
+}
+
+.app-container[data-theme="dark"] .offer-toggle-slider {
+  background-color: #3a3b42;
+  border-color: #4b4c54;
+}
+
+.app-container[data-theme="dark"] .offer-col-value,
+.app-container[data-theme="dark"] .offer-col-value.status-badge {
+  color: var(--text-dark);
+}
+
+/* ---------- Distribution page ----------
+   The preview card (.dist-preview-card and its children) deliberately stays
+   white in both themes: it is a live preview of the printed table-tent / QR
+   card, which is always printed on white paper, so it is left light-only. */
+.app-container[data-theme="dark"] .dist-input-row {
+  border-bottom-color: #3a3b42;
+}
+
+.app-container[data-theme="dark"] .dist-input-label,
+.app-container[data-theme="dark"] .dist-input-field {
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .dist-input-field::placeholder {
+  color: #74757e;
+}
+
+.app-container[data-theme="dark"] .dist-action-btn.secondary {
+  background-color: transparent;
+}
+
+.app-container[data-theme="dark"] .dist-preview-title {
+  color: var(--text-dark);
+}
+
+/* ---------- Settings page ---------- */
+.app-container[data-theme="dark"] .settings-card {
+  border-color: #33343a;
+}
+
+.app-container[data-theme="dark"] .settings-card-title,
+.app-container[data-theme="dark"] .settings-label,
+.app-container[data-theme="dark"] .settings-value {
+  color: var(--text-dark);
+}
+
+/* The edit-pencil icon (Vector.svg) is a bare dark-gray stroke with no
+   background of its own, so it disappears against a dark settings card.
+   Same brightness(0)+invert(1) recolor used for the sidebar icons. */
+.app-container[data-theme="dark"] .settings-card img[alt="Edit"] {
+  filter: brightness(0) invert(1);
+}
+
+/* ---------- Dish (Add/Edit) modal ---------- */
+.app-container[data-theme="dark"] .dish-modal-content {
+  background-color: #1b1c21;
+}
+
+.app-container[data-theme="dark"] .dish-modal-header {
+  background-color: #222329;
+  border-bottom-color: #33343a;
+}
+
+.app-container[data-theme="dark"] .dish-modal-title,
+.app-container[data-theme="dark"] .dish-label,
+.app-container[data-theme="dark"] .currency-symbol {
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .dish-input,
+.app-container[data-theme="dark"] .dish-select {
+  border-color: #3a3b42;
+  color: var(--text-dark);
+  background-color: #222329;
+}
+
+.app-container[data-theme="dark"] .pricing-helper {
+  color: #8a8b93;
+}
+
+.app-container[data-theme="dark"] .dish-radio-dot {
+  border-color: #4b4c54;
+  background-color: #222329;
+}
+
+.app-container[data-theme="dark"] .dish-file-upload {
+  border-color: #3a3b42;
+}
+
+.app-container[data-theme="dark"] .file-upload-btn-label {
+  background-color: #2a2b31;
+  color: #d4d5dc;
+  border-right-color: #3a3b42;
+}
+
+.app-container[data-theme="dark"] .file-upload-name-text {
+  color: #9a9ba3;
+}
+
+.app-container[data-theme="dark"] .btn-cancel-dish {
+  color: #d4d5dc;
+  border-color: #5a5b63;
+}
+
+.app-container[data-theme="dark"] .btn-cancel-dish:hover,
+.app-container[data-theme="dark"] .btn-cancel-category:hover,
+.app-container[data-theme="dark"] .filter-cancel-btn:hover {
+  background-color: #2a2b31;
+}
+
+.app-container[data-theme="dark"] .dish-modal-footer.menu-sticky-footer {
+  background-color: #1b1c21;
+  border-top-color: #2a2b31;
+}
+
+/* ---------- Floating action options menu ---------- */
+.app-container[data-theme="dark"] .fab-options-menu {
+  background-color: #222329;
+  border-color: #33343a;
+}
+
+.app-container[data-theme="dark"] .fab-option-item {
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .fab-option-item:hover {
+  background-color: #2b2c33;
+}
+
+/* ---------- Category modal ---------- */
+.app-container[data-theme="dark"] .category-modal-content {
+  background-color: #1b1c21;
+}
+
+.app-container[data-theme="dark"] .category-modal-header {
+  background-color: #222329;
+}
+
+.app-container[data-theme="dark"] .category-modal-title,
+.app-container[data-theme="dark"] .category-label {
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .category-input {
+  border-color: #3a3b42;
+  color: var(--text-dark);
+  background-color: #222329;
+}
+
+.app-container[data-theme="dark"] .btn-cancel-category {
+  color: #d4d5dc;
+  border-color: #5a5b63;
+}
+
+/* ---------- Filter modal ---------- */
+.app-container[data-theme="dark"] .filter-modal-content {
+  background-color: #1b1c21;
+}
+
+.app-container[data-theme="dark"] .filter-modal-header {
+  background-color: #222329;
+  border-bottom-color: #33343a;
+}
+
+.app-container[data-theme="dark"] .filter-modal-title,
+.app-container[data-theme="dark"] .filter-label {
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .filter-select {
+  background-color: #222329;
+  border-color: #3a3b42;
+  color: var(--text-dark);
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238a8b93' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+.app-container[data-theme="dark"] .filter-checkbox-input,
+.app-container[data-theme="dark"] .filter-radio-input {
+  border-color: #4b4c54;
+  background-color: #222329;
+}
+
+.app-container[data-theme="dark"] .filter-cancel-btn {
+  color: #d4d5dc;
+  border-color: #5a5b63;
+}
+
+/* ---------- Dish details modal ---------- */
+.app-container[data-theme="dark"] .dish-details-img-wrapper {
+  background-color: #26272d;
+}
+
+.app-container[data-theme="dark"] .dish-details-category-tag {
+  background: #2a2b31;
+  color: #c7c9d1;
+}
+
+.app-container[data-theme="dark"] .dish-details-name {
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .dish-details-avail-label {
+  color: #9a9ba3;
+}
+
+.app-container[data-theme="dark"] .dish-details-desc-box {
+  background-color: #1a1b20;
+  border-color: #2a2b31;
+}
+
+.app-container[data-theme="dark"] .dish-details-desc-label {
+  color: #c7c9d1;
+}
+
+.app-container[data-theme="dark"] .dish-details-desc-text {
+  color: #a1a1aa;
+}
+
+.app-container[data-theme="dark"] .dish-details-edit-header-btn {
+  background: transparent;
+}
+
+.app-container[data-theme="dark"] .modal-close-icon-btn {
+  color: #9a9ba3;
+}
+
+.app-container[data-theme="dark"] .modal-close-icon-btn:hover {
+  color: var(--text-dark);
+}
+
+/* ---------- Mobile bottom navigation (dashboard sidebar at <=768px) ---------- */
+@media (max-width: 768px) {
+  .app-container[data-theme="dark"] .sidebar {
+    background-color: #1b1c21 !important;
+    border-top-color: #2a2b31 !important;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .app-container[data-theme="dark"] .sidebar-item .sidebar-text,
+  .app-container[data-theme="dark"] .sidebar.collapsed .sidebar-text {
+    color: #9a9ba3 !important;
   }
 }

@@ -1,7 +1,13 @@
-import { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { API_URL } from '../../../config';
 import authStorage from '../../../app/authStorage';
+import UserAvatar from '../../../app/UserAvatar';
+import { useAvatarActions } from '../../../app/useAvatarActions';
+import { AVATAR_ACCEPT } from '../../../app/avatarApi';
+import { getDisplayName } from '../../../app/userDisplay';
+import ThemeToggleSwitch from '../../../app/ThemeToggle';
 import editIcon from '../../../assets/icons/Vector.svg';
+import './Settings.css';
 
 function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantName, tagline, setTagline, hotelAddress, setHotelAddress, hotelCity, setHotelCity, hotelState, setHotelState }) {
   const [activeModal, setActiveModal] = useState(null); // 'brand', 'hotel', 'user', or null
@@ -11,6 +17,16 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
   const [tempCity, setTempCity] = useState('');
   const [tempState, setTempState] = useState('');
   const [tempUsername, setTempUsername] = useState('');
+  const avatarInputRef = useRef(null);
+  const { upload: uploadAvatar, remove: removeAvatar, isBusy: isAvatarBusy, error: avatarError } = useAvatarActions();
+  const displayName = getDisplayName(currentUser);
+  const avatar = currentUser ? currentUser.avatar : null;
+
+  const handleAvatarFileChange = (event) => {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (file) uploadAvatar(file);
+  };
 
   const handleOpenModal = (type) => {
     setTempName(restaurantName || 'thevingo.com');
@@ -18,7 +34,7 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
     setTempAddress(hotelAddress || '');
     setTempCity(hotelCity || '');
     setTempState(hotelState || '');
-    setTempUsername(currentUser ? currentUser.username : 'Krishna Ram');
+    setTempUsername(currentUser && currentUser.username ? currentUser.username : '');
     setActiveModal(type);
   };
 
@@ -57,11 +73,14 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
       if (data.user.hotel_city !== undefined) setHotelCity(data.user.hotel_city);
       if (data.user.hotel_state !== undefined) setHotelState(data.user.hotel_state);
       
+      // Merge so fields the endpoint doesn't return (e.g. avatar on older servers) are kept
+      const mergedUser = { ...(currentUser || {}), ...data.user };
+
       if (setCurrentUser) {
-        setCurrentUser(data.user);
+        setCurrentUser(mergedUser);
       }
 
-      authStorage.setUser(data.user);
+      authStorage.setUser(mergedUser);
       
       setActiveModal(null);
     } catch (err) {
@@ -157,9 +176,58 @@ function Settings({ currentUser, setCurrentUser, restaurantName, setRestaurantNa
           </button>
         </div>
         
-        <div className="settings-row">
+        <div className="settings-row settings-photo-row">
+          <span className="settings-label landing_body" style={{ minWidth: '180px' }}>Profile photo</span>
+          <div className="settings-photo">
+            <UserAvatar name={displayName} avatar={avatar} isBusy={isAvatarBusy} className="settings-photo__avatar" />
+            <div className="settings-photo__actions">
+              <button
+                type="button"
+                className="settings-photo__btn"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={isAvatarBusy}
+              >
+                {isAvatarBusy ? 'Saving…' : 'Upload photo'}
+              </button>
+              {avatar && (
+                <button
+                  type="button"
+                  className="settings-photo__btn settings-photo__btn--danger"
+                  onClick={() => removeAvatar()}
+                  disabled={isAvatarBusy}
+                >
+                  Remove photo
+                </button>
+              )}
+            </div>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept={AVATAR_ACCEPT}
+              onChange={handleAvatarFileChange}
+              hidden
+              data-testid="settings-avatar-input"
+            />
+          </div>
+        </div>
+        <p className="settings-photo__hint landing_body">JPG, PNG, GIF or WEBP, up to 2MB.</p>
+        {avatarError && <p className="settings-photo__error" role="alert">{avatarError}</p>}
+
+        <div className="settings-row" style={{ marginTop: '12px' }}>
           <span className="settings-label landing_body" style={{ minWidth: '180px' }}>User name</span>
-          <span className="settings-value landing_body">{currentUser ? currentUser.username : 'Krishna Ram'}</span>
+          <span className="settings-value landing_body">{currentUser && currentUser.username ? currentUser.username : 'Not set'}</span>
+        </div>
+      </div>
+
+      {/* Card 4: Appearance */}
+      <div className="settings-card" style={{ marginTop: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 className="settings-card-title landing_heading2" style={{ margin: 0 }}>Appearance</h3>
+        </div>
+
+        <div className="settings-row">
+          <span className="settings-label landing_body" style={{ minWidth: '180px' }}>Dark mode</span>
+          <ThemeToggleSwitch id="settings-theme-toggle" />
         </div>
       </div>
 

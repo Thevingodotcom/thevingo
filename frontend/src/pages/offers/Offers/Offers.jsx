@@ -1,23 +1,17 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { API_URL } from '../../../config';
 import authStorage from '../../../app/authStorage';
 import addBtnIcon from '../../../assets/icons/Add.svg';
 import deleteIcon from '../../../assets/icons/delete.svg';
+import { toDateInputValue, formatOfferDuration, parseOfferDuration, normalizeBadgeType } from '../../../utils/offerDuration';
+
+import './Offers.css';
 
 // Custom icons inline SVGs
-const TrashIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6"></polyline>
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-    <line x1="10" y1="11" x2="10" y2="17"></line>
-    <line x1="14" y1="11" x2="14" y2="17"></line>
-  </svg>
-);
-
-const PlusIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19"></line>
-    <line x1="5" y1="12" x2="19" y2="12"></line>
+const EditIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 20h9"></path>
+    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
   </svg>
 );
 
@@ -36,9 +30,9 @@ const PercentTagBadge = () => (
   <div className="percent-tag-badge-wrapper">
     <svg width="44" height="44" viewBox="0 0 48 48" fill="none" style={{ transform: 'rotate(-5deg)' }}>
       <path d="M22 6 C18 6 12 12 18 18" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-      <path d="M15 15 L28 15 L38 25 L25 38 L15 28 Z" fill="#e11d48" stroke="var(--bg-white)" strokeWidth="1.2" />
-      <circle cx="19" cy="19" r="2.2" fill="var(--bg-white)" />
-      <text x="22" y="30" fill="var(--bg-white)" fontSize="12" fontWeight="900" fontFamily="sans-serif">%</text>
+      <path d="M15 15 L28 15 L38 25 L25 38 L15 28 Z" fill="#e11d48" stroke="#ffffff" strokeWidth="1.2" />
+      <circle cx="19" cy="19" r="2.2" fill="#ffffff" />
+      <text x="22" y="30" fill="#ffffff" fontSize="12" fontWeight="900" fontFamily="sans-serif">%</text>
     </svg>
   </div>
 );
@@ -55,23 +49,19 @@ function Offers({ offers, setOffers }) {
 
   // Modal open state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Offer being edited (null while creating a new one)
+  const [editingOffer, setEditingOffer] = useState(null);
+  // Dates the edit form was prefilled with (to detect an untouched duration)
+  const [initialDates, setInitialDates] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // New offer form states
-  const getTodayDateString = () => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const getTodayDateString = () => toDateInputValue(new Date());
 
   const getFutureDateString = (monthsAhead = 1) => {
     const d = new Date();
     d.setMonth(d.getMonth() + monthsAhead);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return toDateInputValue(d);
   };
 
   const [name, setName] = useState('');
@@ -79,7 +69,44 @@ function Offers({ offers, setOffers }) {
   const [endDate, setEndDate] = useState(getFutureDateString(1));
   const [timing, setTiming] = useState('B/L/D');
   const [pricePercent, setPricePercent] = useState('');
-  const [badgeType, setBadgeType] = useState('combo-biriyani');
+  const [badgeType, setBadgeType] = useState('combo-offer');
+
+  const resetForm = () => {
+    setName('');
+    setStartDate(getTodayDateString());
+    setEndDate(getFutureDateString(1));
+    setTiming('B/L/D');
+    setPricePercent('');
+    setBadgeType('combo-offer');
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingOffer(null);
+    setInitialDates(null);
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setEditingOffer(null);
+    setInitialDates(null);
+    setIsModalOpen(true);
+  };
+
+  // Open the offer form prefilled with an existing offer
+  const openEditModal = (offer) => {
+    const parsedDates = parseOfferDuration(offer.duration);
+    const dates = parsedDates || { startDate: getTodayDateString(), endDate: getFutureDateString(1) };
+    setName(offer.name || '');
+    setStartDate(dates.startDate);
+    setEndDate(dates.endDate);
+    setTiming(offer.timing || 'B/L/D');
+    setPricePercent(offer.pricePercent || '');
+    setBadgeType(normalizeBadgeType(offer.badgeType));
+    setInitialDates(dates);
+    setEditingOffer(offer);
+    setIsModalOpen(true);
+  };
 
   // Toggle active/inactive state of offer
   const handleToggleActive = async (id) => {
@@ -156,50 +183,65 @@ function Offers({ offers, setOffers }) {
     }
   };
 
-  // Create new offer
-  const handleCreateOffer = async (e) => {
+  // Create a new offer, or save changes to the offer being edited
+  const handleSubmitOffer = async (e) => {
     e.preventDefault();
-    if (!name || !pricePercent || !startDate || !endDate) return;
+    if (isSaving) return;
+    if (!name.trim() || !pricePercent.trim() || !startDate || !endDate) return;
+    if (endDate < startDate) {
+      alert('End date must be on or after the start date.');
+      return;
+    }
 
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const formattedDuration = `${months[start.getMonth()]} ${String(start.getDate()).padStart(2, '0')}-${months[end.getMonth()]} ${String(end.getDate()).padStart(2, '0')}`;
+    // Keep the stored duration text when editing and the dates were not changed
+    const datesUntouched = !!editingOffer && !!initialDates
+      && initialDates.startDate === startDate && initialDates.endDate === endDate;
+    const duration = datesUntouched && editingOffer.duration
+      ? editingOffer.duration
+      : formatOfferDuration(startDate, endDate);
 
+    const payload = {
+      name: name.trim(),
+      badgeType,
+      duration,
+      timing,
+      pricePercent: pricePercent.trim()
+    };
+
+    const isEdit = !!editingOffer;
+    setIsSaving(true);
     try {
       const token = authStorage.getToken();
-      const response = await fetch(`${API_URL}/api/offers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name,
-          badgeType,
-          duration: formattedDuration,
-          timing,
-          pricePercent
-        })
-      });
+      const response = await fetch(
+        isEdit ? `${API_URL}/api/offers/${editingOffer.id}` : `${API_URL}/api/offers`,
+        {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        }
+      );
       const data = await response.json();
-      if (response.ok) {
-        setOffers(prev => [...prev, data.offer]);
-
-        // Reset fields
-        setName('');
-        setStartDate(getTodayDateString());
-        setEndDate(getFutureDateString(1));
-        setTiming('B/L/D');
-        setPricePercent('');
-        setBadgeType('combo-biriyani');
-        setIsModalOpen(false);
+      if (response.ok && data.offer) {
+        if (isEdit) {
+          setOffers(prev => prev.map(o => (
+            o.id === editingOffer.id ? { ...o, ...data.offer, checked: o.checked } : o
+          )));
+        } else {
+          setOffers(prev => [...prev, data.offer]);
+        }
+        resetForm();
+        closeModal();
       } else {
-        alert(data.message || 'Failed to create offer');
+        alert(data.message || (isEdit ? 'Failed to update offer' : 'Failed to create offer'));
       }
     } catch (err) {
-      console.error('Error creating offer:', err);
-      alert('Failed to create offer');
+      console.error(isEdit ? 'Error updating offer:' : 'Error creating offer:', err);
+      alert(isEdit ? 'Failed to update offer' : 'Failed to create offer');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -235,10 +277,9 @@ function Offers({ offers, setOffers }) {
 
               {/* Badge Icon */}
               <div className="offer-badge-col" style={{ marginLeft: '16px', width: '56px', display: 'flex', justifyContent: 'center' }}>
-                {offer.badgeType === 'combo-biriyani' && <ComboOfferBadge type="biriyani" />}
-                {offer.badgeType === 'combo-veg' && <ComboOfferBadge type="veg" />}
-                {offer.badgeType === 'percent-paneer' && <PercentTagBadge />}
-                {offer.badgeType === 'weekend-vibe' && <WeekendOfferBadge />}
+                {(offer.badgeType === 'combo-offer' || offer.badgeType === 'combo-biriyani' || offer.badgeType === 'combo-veg') && <ComboOfferBadge />}
+                {(offer.badgeType === 'discount' || offer.badgeType === 'percent-paneer') && <PercentTagBadge />}
+                {(offer.badgeType === 'weekend-offer' || offer.badgeType === 'weekend-vibe') && <WeekendOfferBadge />}
               </div>
 
               {/* Columns Details */}
@@ -270,6 +311,18 @@ function Offers({ offers, setOffers }) {
                   <span className="offer-col-value landing_body">{offer.pricePercent}</span>
                 </div>
               </div>
+
+              {/* Edit action */}
+              <button
+                type="button"
+                className="offer-edit-btn landing_button"
+                onClick={() => openEditModal(offer)}
+                title="Edit offer"
+                aria-label={`Edit offer ${offer.name}`}
+              >
+                <EditIcon />
+                Edit
+              </button>
             </div>
           ))
         ) : (
@@ -304,7 +357,7 @@ function Offers({ offers, setOffers }) {
 
       <button 
         className="fab-action-btn add-btn-img-btn" 
-        onClick={() => setIsModalOpen(true)}
+        onClick={openCreateModal}
         title="Add New Offer"
         style={{
           position: 'fixed',
@@ -321,16 +374,16 @@ function Offers({ offers, setOffers }) {
         <img src={addBtnIcon} alt="Add New Offer" style={{ width: '50px', height: '50px', display: 'block' }} />
       </button>
 
-      {/* Add Offer Modal */}
+      {/* Add / Edit Offer Modal */}
       {isModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content offer-modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="modal-title landing_heading2">Create New Offer</h3>
-              <button className="modal-close-btn" onClick={() => setIsModalOpen(false)}>×</button>
+              <h3 className="modal-title landing_heading2">{editingOffer ? 'Edit Offer' : 'Create New Offer'}</h3>
+              <button className="modal-close-btn" onClick={closeModal}>×</button>
             </div>
 
-            <form onSubmit={handleCreateOffer}>
+            <form onSubmit={handleSubmitOffer}>
               <div className="form-group">
                 <label className="form-label landing_body">Offer Name</label>
                 <input 
@@ -343,30 +396,29 @@ function Offers({ offers, setOffers }) {
                 />
               </div>
 
-              <div className="form-row">
-                <div className="form-group" style={{ flex: '1.5' }}>
-                  <label className="form-label landing_body">Duration</label>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input 
-                      type="date" 
-                      className="form-input landing_placeholder" 
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      required 
-                      style={{ padding: '8px 10px' }}
-                    />
-                    <span className="landing_body" style={{ color: 'var(--text-muted)' }}>to</span>
-                    <input 
-                      type="date" 
-                      className="form-input landing_placeholder" 
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      required 
-                      style={{ padding: '8px 10px' }}
-                    />
-                  </div>
+              <div className="form-group">
+                <label className="form-label landing_body">Duration</label>
+                <div className="offer-duration-row">
+                  <input 
+                    type="date" 
+                    className="form-input landing_placeholder" 
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    required 
+                  />
+                  <span className="offer-duration-separator landing_body">to</span>
+                  <input 
+                    type="date" 
+                    className="form-input landing_placeholder" 
+                    value={endDate}
+                    min={startDate || undefined}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    required 
+                  />
                 </div>
+              </div>
 
+              <div className="form-row">
                 <div className="form-group">
                   <label className="form-label landing_body">Price/percentage</label>
                   <input 
@@ -378,9 +430,7 @@ function Offers({ offers, setOffers }) {
                     required 
                   />
                 </div>
-              </div>
 
-              <div className="form-row">
                 <div className="form-group">
                   <label className="form-label landing_body">Timing</label>
                   <select 
@@ -393,25 +443,26 @@ function Offers({ offers, setOffers }) {
                     <option value="B/L">B/L (Breakfast/Lunch)</option>
                   </select>
                 </div>
+              </div>
 
-                <div className="form-group">
-                  <label className="form-label landing_body">Badge Style</label>
-                  <select 
-                    className="form-select landing_placeholder"
-                    value={badgeType}
-                    onChange={(e) => setBadgeType(e.target.value)}
-                  >
-                    <option value="combo-biriyani">Blue Combo Offer (Biriyani)</option>
-                    <option value="combo-veg">Blue Combo Offer (Veg)</option>
-                    <option value="percent-paneer">Red Percent Tag (%)</option>
-                    <option value="weekend-vibe">Red Weekend Offer</option>
-                  </select>
-                </div>
+              <div className="form-group">
+                <label className="form-label landing_body">Badge Style</label>
+                <select 
+                  className="form-select landing_placeholder"
+                  value={badgeType}
+                  onChange={(e) => setBadgeType(e.target.value)}
+                >
+                  <option value="combo-offer">Combo offer</option>
+                  <option value="discount">Discount</option>
+                  <option value="weekend-offer">weekend offer</option>
+                </select>
               </div>
 
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary landing_button" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary landing_button">Create Offer</button>
+                <button type="button" className="btn btn-secondary landing_button" onClick={closeModal}>Cancel</button>
+                <button type="submit" className="btn btn-primary landing_button" disabled={isSaving}>
+                  {isSaving ? 'Saving...' : (editingOffer ? 'Save Changes' : 'Create Offer')}
+                </button>
               </div>
             </form>
           </div>

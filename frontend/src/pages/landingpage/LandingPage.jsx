@@ -11,11 +11,10 @@ import { Link } from 'react-router-dom';
 import featureUpload from '../../assets/icons/Frame 54.svg';
 import featureHybrid from '../../assets/icons/Frame 50.svg';
 import featureReprint from '../../assets/icons/Frame 54 (2).svg';
-import authStorage from '../../app/authStorage';
+import useIsLoggedIn from './useIsLoggedIn';
 
 const LandingPage = () => {
-  const token = authStorage.getToken();
-  const startPath = token ? '/dashboard' : '/login';
+  const isLoggedIn = useIsLoggedIn();
 
   return (
     <div className="landing-page" id="landing-page">
@@ -33,13 +32,25 @@ const LandingPage = () => {
               Affordable, customizable digital menus for Cafes. Switch to QR or print your own in seconds, for free
             </p>
             <div className="landing-hero__buttons">
-              <Link to="/register" className="landing-hero__btn landing-hero__btn--primary landing_button">
-                Create account
-              </Link>
+              {isLoggedIn ? (
+                <Link to="/dashboard" className="landing-hero__btn landing-hero__btn--primary landing_button">
+                  Go to dashboard
+                </Link>
+              ) : (
+                <Link to="/register" className="landing-hero__btn landing-hero__btn--primary landing_button">
+                  Create free account
+                </Link>
+              )}
               <Link to="/product#how-it-works" className="landing-hero__btn landing-hero__btn--outline landing_button">
                 See how it works
               </Link>
             </div>
+            {!isLoggedIn && (
+              <p className="landing-hero__login-hint landing_body">
+                Already have an account?{' '}
+                <Link to="/login" className="landing-hero__login-link landing_anchor">Log in</Link>
+              </p>
+            )}
           </div>
           <div className="landing-hero__visual">
             <img

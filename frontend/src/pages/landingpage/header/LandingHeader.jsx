@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import authStorage from '../../../app/authStorage';
+import useIsLoggedIn from '../useIsLoggedIn';
 import './LandingHeader.css';
 import logoIcon from '../../../assets/icons/Frame 123.svg';
 
 const LandingHeader = () => {
-  const token = authStorage.getToken();
-  const startPath = token ? '/dashboard' : '/login';
+  const isLoggedIn = useIsLoggedIn();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   return (
     <header className="landing-header" id="landing-header">
       <div className="landing-header__inner">
         {/* Logo */}
-        <Link to="/" className="landing-header__logo" onClick={() => setIsMobileMenuOpen(false)}>
+        <Link to="/" className="landing-header__logo" onClick={closeMobileMenu}>
           <img src={logoIcon} alt="thevingo.com" className="landing-header__logo-img" />
         </Link>
 
@@ -41,17 +41,25 @@ const LandingHeader = () => {
               <NavLink to="/pricing" className="landing-header__nav-link landing_anchor">Pricing</NavLink>
             </li>
             <li className="landing-header__nav-item">
-              <NavLink to="/login" className="landing-header__nav-link landing_anchor">Login</NavLink>
+              <a href="#contact" className="landing-header__nav-link landing_anchor">Contact sales</a>
             </li>
           </ul>
 
           <div className="landing-header__actions">
-            <a href="#contact" className="landing-header__btn landing-header__btn--outline landing_button">
-              Contact sales
-            </a>
-            <Link to="/pricing" className="landing-header__btn landing-header__btn--primary landing_button">
-              Get started for free
-            </Link>
+            {isLoggedIn ? (
+              <Link to="/dashboard" className="landing-header__btn landing-header__btn--primary landing_button">
+                Go to dashboard
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" className="landing-header__btn landing-header__btn--outline landing_button">
+                  Login
+                </Link>
+                <Link to="/register" className="landing-header__btn landing-header__btn--primary landing_button">
+                  Create account
+                </Link>
+              </>
+            )}
           </div>
         </nav>
       </div>
@@ -61,28 +69,38 @@ const LandingHeader = () => {
         <div className="landing-header__mobile-menu">
           <ul className="landing-header__mobile-list">
             <li>
-              <NavLink to="/" end className="landing-header__mobile-link landing_anchor" onClick={() => setIsMobileMenuOpen(false)}>Home</NavLink>
+              <NavLink to="/" end className="landing-header__mobile-link landing_anchor" onClick={closeMobileMenu}>Home</NavLink>
             </li>
             <li>
-              <NavLink to="/product" className="landing-header__mobile-link landing_anchor" onClick={() => setIsMobileMenuOpen(false)}>Product</NavLink>
+              <NavLink to="/product" className="landing-header__mobile-link landing_anchor" onClick={closeMobileMenu}>Product</NavLink>
             </li>
             <li>
-              <NavLink to="/pricing" className="landing-header__mobile-link landing_anchor" onClick={() => setIsMobileMenuOpen(false)}>Pricing</NavLink>
+              <NavLink to="/pricing" className="landing-header__mobile-link landing_anchor" onClick={closeMobileMenu}>Pricing</NavLink>
             </li>
             <li>
-              <NavLink to="/login" className="landing-header__mobile-link landing_anchor" onClick={() => setIsMobileMenuOpen(false)}>Login</NavLink>
+              <a href="#contact" className="landing-header__mobile-link landing_anchor" onClick={closeMobileMenu}>Contact sales</a>
             </li>
             <li className="mobile-actions-divider"></li>
-            <li style={{ width: '100%' }}>
-              <a href="#contact" className="landing-header__mobile-btn outline landing_button" onClick={() => setIsMobileMenuOpen(false)}>
-                Contact sales
-              </a>
-            </li>
-            <li style={{ width: '100%', marginTop: '10px' }}>
-              <Link to="/pricing" className="landing-header__mobile-btn primary landing_button" onClick={() => setIsMobileMenuOpen(false)}>
-                Get started for free
-              </Link>
-            </li>
+            {isLoggedIn ? (
+              <li style={{ width: '100%' }}>
+                <Link to="/dashboard" className="landing-header__mobile-btn primary landing_button" onClick={closeMobileMenu}>
+                  Go to dashboard
+                </Link>
+              </li>
+            ) : (
+              <>
+                <li style={{ width: '100%' }}>
+                  <Link to="/register" className="landing-header__mobile-btn primary landing_button" onClick={closeMobileMenu}>
+                    Create account
+                  </Link>
+                </li>
+                <li style={{ width: '100%', marginTop: '10px' }}>
+                  <Link to="/login" className="landing-header__mobile-btn outline landing_button" onClick={closeMobileMenu}>
+                    Login
+                  </Link>
+                </li>
+              </>
+            )}
           </ul>
         </div>
       )}
