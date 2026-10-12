@@ -384,4 +384,91 @@ describe('MenuList Dish Details and Edit Functionality', () => {
     expect(screen.queryByText(/Clear all/i)).not.toBeInTheDocument();
     expect(screen.getByText('Hyderabadi Chicken Biriyani')).toBeInTheDocument();
   });
+
+  describe('Grid/List view toggle', () => {
+    beforeEach(() => window.localStorage.clear());
+
+    it('defaults to grid view and switches to list view, remembering the choice', () => {
+      render(<MenuList categories={mockCategories} setCategories={vi.fn()} />);
+
+      const foodGrid = screen.getByText('Hyderabadi Chicken Biriyani').closest('.food-grid');
+      expect(foodGrid).not.toHaveClass('list-view');
+
+      const gridBtn = screen.getByTitle('Grid view');
+      const listBtn = screen.getByTitle('List view');
+      expect(gridBtn).toHaveAttribute('aria-pressed', 'true');
+      expect(listBtn).toHaveAttribute('aria-pressed', 'false');
+
+      fireEvent.click(listBtn);
+      expect(foodGrid).toHaveClass('list-view');
+      expect(listBtn).toHaveAttribute('aria-pressed', 'true');
+      expect(window.localStorage.getItem('thevingo_menu_view')).toBe('list');
+    });
+
+    it('restores the previously saved list view on mount', () => {
+      window.localStorage.setItem('thevingo_menu_view', 'list');
+      render(<MenuList categories={mockCategories} setCategories={vi.fn()} />);
+
+      const foodGrid = screen.getByText('Hyderabadi Chicken Biriyani').closest('.food-grid');
+      expect(foodGrid).toHaveClass('list-view');
+      expect(screen.getByTitle('List view')).toHaveAttribute('aria-pressed', 'true');
+    });
+  });
+
+  describe('Delete all', () => {
+    beforeEach(() => mockFetch.mockReset());
+
+    it('is not offered when the menu is already empty', () => {
+      render(<MenuList categories={[]} setCategories={vi.fn()} />);
+      fireEvent.click(screen.getByTitle('Add Action'));
+      expect(screen.queryByRole('button', { name: /Delete all/i })).not.toBeInTheDocument();
+    });
+
+    it('asks for confirmation with category/dish counts, and only deletes on confirm', async () => {
+      let categoriesState = [...mockCategories];
+      const setCategories = vi.fn((updater) => {
+        categoriesState = typeof updater === 'function' ? updater(categoriesState) : updater;
+      });
+      render(<MenuList categories={categoriesState} setCategories={setCategories} />);
+
+      fireEvent.click(screen.getByTitle('Add Action'));
+      fireEvent.click(screen.getByRole('button', { name: /Delete all/i }));
+
+      const dialog = screen.getByRole('alertdialog');
+      expect(dialog).toHaveTextContent('Delete entire menu?');
+      expect(dialog).toHaveTextContent('all 1 category and 1 dish');
+
+      // Cancel does not delete anything
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+      expect(mockFetch).not.toHaveBeenCalled();
+
+      // Confirm calls the delete-all endpoint and clears the menu
+      fireEvent.click(screen.getByTitle('Add Action'));
+      fireEvent.click(screen.getByRole('button', { name: /Delete all/i }));
+      mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) });
+      fireEvent.click(screen.getByRole('button', { name: /Delete everything/i }));
+
+      await waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/api/menu/all'), expect.objectContaining({ method: 'DELETE' }));
+        expect(categoriesState).toEqual([]);
+      });
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
+
+    it('keeps the menu and shows an error when the delete-all request fails', async () => {
+      window.alert = vi.fn();
+      const setCategories = vi.fn();
+      render(<MenuList categories={mockCategories} setCategories={setCategories} />);
+
+      fireEvent.click(screen.getByTitle('Add Action'));
+      fireEvent.click(screen.getByRole('button', { name: /Delete all/i }));
+      mockFetch.mockResolvedValueOnce({ ok: false });
+      fireEvent.click(screen.getByRole('button', { name: /Delete everything/i }));
+
+      await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Failed to delete the menu.'));
+      expect(setCategories).not.toHaveBeenCalled();
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    });
+  });
 });

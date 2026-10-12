@@ -34,6 +34,26 @@ const CloseSmallIcon = ({ size = 12 }) => (
   </svg>
 );
 
+const GridViewIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+    <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+    <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+    <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+  </svg>
+);
+
+const ListViewIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <line x1="8" y1="6" x2="21" y2="6"></line>
+    <line x1="8" y1="12" x2="21" y2="12"></line>
+    <line x1="8" y1="18" x2="21" y2="18"></line>
+    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+  </svg>
+);
+
 const ImportIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -305,6 +325,28 @@ function MenuList({ categories, setCategories }) {
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
   const fabRef = useRef(null);
 
+  // Grid/List view toggle (desktop only). Remembered per-browser like the dark
+  // theme preference, defaulting to the existing grid layout.
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem('thevingo_menu_view');
+      return stored === 'list' ? 'list' : 'grid';
+    } catch {
+      return 'grid';
+    }
+  });
+
+  const handleSetViewMode = (mode) => {
+    if (mode === viewMode) return;
+    haptics?.selection?.();
+    setViewMode(mode);
+    try {
+      window.localStorage.setItem('thevingo_menu_view', mode);
+    } catch {
+      // Best-effort persistence only
+    }
+  };
+
   // Custom states for category dropdown and selection mode
   const [activeCategoryMenu, setActiveCategoryMenu] = useState(null);
   const [selectionCategoryId, setSelectionCategoryId] = useState(null);
@@ -436,6 +478,57 @@ function MenuList({ categories, setCategories }) {
       alert('Error deleting category.');
     } finally {
       setIsDeletingCategory(false);
+    }
+  };
+
+  // Delete-all confirmation dialog: boolean open state + in-flight flag
+  const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+
+  const requestDeleteAll = () => {
+    haptics?.warning?.();
+    setIsFabMenuOpen(false);
+    setIsDeleteAllOpen(true);
+  };
+
+  const handleCancelDeleteAll = () => {
+    if (isDeletingAll) return;
+    setIsDeleteAllOpen(false);
+  };
+
+  const handleConfirmDeleteAll = async () => {
+    if (isDeletingAll) return;
+    setIsDeletingAll(true);
+
+    try {
+      const token = authStorage.getToken();
+      const response = await fetch(`${API_URL}/api/menu/all`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setCategories([]);
+        setAppliedCategory('all');
+        setSelectionCategoryId(null);
+        setSelectedDishIds([]);
+        setIsDeleteAllOpen(false);
+        haptics?.success?.();
+
+        // Instant cross-tab broadcast
+        broadcastMenuUpdate();
+      } else {
+        haptics?.error?.();
+        alert('Failed to delete the menu.');
+      }
+    } catch (err) {
+      console.error(err);
+      haptics?.error?.();
+      alert('Error deleting the menu.');
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
@@ -702,6 +795,27 @@ function MenuList({ categories, setCategories }) {
           {hasActiveFilters && <span className="menu-filter-btn-dot" aria-hidden="true"></span>}
         </button>
 
+        <div className="menu-view-toggle" role="group" aria-label="Menu layout">
+          <button
+            type="button"
+            className={`menu-view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`}
+            onClick={() => handleSetViewMode('grid')}
+            aria-pressed={viewMode === 'grid'}
+            title="Grid view"
+          >
+            <GridViewIcon />
+          </button>
+          <button
+            type="button"
+            className={`menu-view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`}
+            onClick={() => handleSetViewMode('list')}
+            aria-pressed={viewMode === 'list'}
+            title="List view"
+          >
+            <ListViewIcon />
+          </button>
+        </div>
+
         <button
           type="button"
           className="menu-import-btn"
@@ -785,7 +899,7 @@ function MenuList({ categories, setCategories }) {
                 </div>
               </div>
 
-              <div className="food-grid">
+              <div className={`food-grid ${viewMode === 'list' ? 'list-view' : ''}`}>
                 {category.items.length > 0 ? (
                   category.items.map(item => (
                     <article 
@@ -946,6 +1060,15 @@ function MenuList({ categories, setCategories }) {
               >
                 Import menu
               </button>
+              {categories.length > 0 && (
+                <button
+                  type="button"
+                  className="fab-option-item fab-option-item-danger"
+                  onClick={requestDeleteAll}
+                >
+                  Delete all
+                </button>
+              )}
             </div>
           )}
 
@@ -1509,6 +1632,61 @@ function MenuList({ categories, setCategories }) {
                   className="btn-cancel-category"
                   onClick={handleCancelDeleteCategory}
                   disabled={isDeletingCategory}
+                  autoFocus
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete All Confirmation */}
+      {isDeleteAllOpen && (
+        <div className="modal-overlay" onClick={handleCancelDeleteAll}>
+          <div
+            className="category-modal-content"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-all-title"
+            aria-describedby="delete-all-desc"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') handleCancelDeleteAll();
+            }}
+          >
+            <div className="category-modal-header">
+              <h3 id="delete-all-title" className="category-modal-title">Delete entire menu?</h3>
+            </div>
+
+            <div className="menu-confirm-body">
+              <p id="delete-all-desc" className="menu-confirm-text">
+                Are you sure you want to delete <strong>your whole menu</strong>?
+              </p>
+              <div className="menu-confirm-warning">
+                <WarningIcon />
+                <span>
+                  This will permanently delete all {categories.length} categor{categories.length === 1 ? 'y' : 'ies'} and{' '}
+                  {categories.reduce((sum, cat) => sum + (cat.items?.length || 0), 0)} dish(es), along with their
+                  uploaded photos. This can't be undone.
+                </span>
+              </div>
+
+              <div className="category-modal-footer">
+                <button
+                  type="button"
+                  className="btn-create-category menu-btn-danger"
+                  onClick={handleConfirmDeleteAll}
+                  disabled={isDeletingAll}
+                >
+                  {isDeletingAll ? 'Deleting…' : 'Delete everything'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-cancel-category"
+                  onClick={handleCancelDeleteAll}
+                  disabled={isDeletingAll}
                   autoFocus
                 >
                   Cancel

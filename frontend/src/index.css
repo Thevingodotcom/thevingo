@@ -434,6 +434,51 @@ body {
   gap: 20px;
 }
 
+/* List view (desktop toggle): one compact row per dish instead of a card grid. */
+.food-grid.list-view {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.list-view .food-card:hover {
+  transform: none;
+}
+
+.list-view .food-card-body {
+  align-items: center;
+  padding: 8px 14px;
+}
+
+.list-view .food-img-wrapper {
+  width: 44px;
+  height: 44px;
+}
+
+.list-view .food-details {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 20px;
+}
+
+.list-view .food-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list-view .food-price {
+  margin: 0;
+  flex-shrink: 0;
+  width: 70px;
+}
+
+.list-view .veg-indicator {
+  flex-shrink: 0;
+}
+
 .food-card {
   background-color: var(--bg-white);
   border: 1px solid #e5e7eb;
@@ -1621,6 +1666,17 @@ body {
 
 .fab-option-item:hover {
   background-color: #f3f4f6;
+}
+
+.fab-option-item-danger {
+  color: #ef4444;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 4px;
+  padding-top: 12px;
+}
+
+.fab-option-item-danger:hover {
+  background-color: #fef2f2;
 }
 
 .fab-img-btn-toggle {
@@ -2845,6 +2901,14 @@ body {
 
 .app-container[data-theme="dark"] .fab-option-item:hover {
   background-color: #2b2c33;
+}
+
+.app-container[data-theme="dark"] .fab-option-item-danger {
+  border-top-color: #33343a;
+}
+
+.app-container[data-theme="dark"] .fab-option-item-danger:hover {
+  background-color: rgba(239, 68, 68, 0.12);
 }
 
 /* ---------- Category modal ---------- */
