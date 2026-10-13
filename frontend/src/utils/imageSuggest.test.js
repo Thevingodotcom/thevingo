@@ -18,19 +18,51 @@ describe('fetchDishImageSuggestions', () => {
     ]);
   });
 
-  it('falls back to the last and then first word, de-duplicating and capping at the limit', async () => {
+  it('falls back to individual words longest-first, de-duplicating and capping at the limit', async () => {
     const fetchImpl = vi.fn()
-      .mockResolvedValueOnce(ok(null))
-      .mockResolvedValueOnce(ok([{ strMeal: 'Biryani', strMealThumb: 'https://x/1.jpg' }]))
+      .mockResolvedValueOnce(ok(null)) // full phrase
+      .mockResolvedValueOnce(ok([{ strMeal: 'Biryani', strMealThumb: 'https://x/1.jpg' }])) // "hyderabadi"
       .mockResolvedValueOnce(ok([
         { strMeal: 'Biryani', strMealThumb: 'https://x/1.jpg' },
         { strMeal: 'Other', strMealThumb: 'https://x/2.jpg' },
-      ]));
+      ])) // "biriyani"
+      .mockResolvedValueOnce(ok([{ strMeal: 'Chicken Dish', strMealThumb: 'https://x/3.jpg' }])); // "chicken"
     const result = await fetchDishImageSuggestions('Hyderabadi Chicken Biriyani', { fetchImpl, limit: 4 });
-    expect(fetchImpl).toHaveBeenCalledTimes(3);
-    expect(fetchImpl.mock.calls[1][0]).toContain('s=biriyani');
-    expect(fetchImpl.mock.calls[2][0]).toContain('s=hyderabadi');
-    expect(result.map((r) => r.url)).toEqual(['https://x/1.jpg', 'https://x/2.jpg']);
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+    // Full phrase first, then words longest-to-shortest: "hyderabadi" (10),
+    // "biriyani" (8), "chicken" (7).
+    expect(fetchImpl.mock.calls[0][0]).toContain('s=hyderabadi%20chicken%20biriyani');
+    expect(fetchImpl.mock.calls[1][0]).toContain('s=hyderabadi');
+    expect(fetchImpl.mock.calls[2][0]).toContain('s=biriyani');
+    expect(fetchImpl.mock.calls[3][0]).toContain('s=chicken');
+    expect(result.map((r) => r.url)).toEqual(['https://x/1.jpg', 'https://x/2.jpg', 'https://x/3.jpg']);
+  });
+
+  it('tries a significant middle word, not just the first and last words of the name', async () => {
+    // Regression test: the old fallback only tried the first and last words of
+    // the dish name, so a middle word like "Chicken" (which TheMealDB actually
+    // has good coverage for) was never searched for a 3+ word dish name.
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(ok(null)) // full phrase
+      .mockResolvedValueOnce(ok(null)) // "chettinad" (longest)
+      .mockResolvedValueOnce(ok(null)) // "chicken"
+      .mockResolvedValueOnce(ok([{ strMeal: 'Chicken Curry', strMealThumb: 'https://x/3.jpg' }])); // "curry"
+    const result = await fetchDishImageSuggestions('Chettinad Chicken Curry', { fetchImpl });
+    const queried = fetchImpl.mock.calls.map(([url]) => decodeURIComponent(url).split('s=')[1]);
+    expect(queried).toEqual(['chettinad chicken curry', 'chettinad', 'chicken', 'curry']);
+    expect(result).toEqual([{ url: 'https://x/3.jpg', title: 'Chicken Curry' }]);
+  });
+
+  it('also tries a naive singular form of a plural word', async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(ok(null)) // full phrase
+      .mockResolvedValueOnce(ok(null)) // "paneer"
+      .mockResolvedValueOnce(ok(null)) // "tikkas"
+      .mockResolvedValueOnce(ok([{ strMeal: 'Tikka', strMealThumb: 'https://x/4.jpg' }])); // "tikka" (singular)
+    const result = await fetchDishImageSuggestions('Paneer Tikkas', { fetchImpl });
+    const queried = fetchImpl.mock.calls.map(([url]) => decodeURIComponent(url).split('s=')[1]);
+    expect(queried).toEqual(['paneer tikkas', 'paneer', 'tikkas', 'tikka']);
+    expect(result).toEqual([{ url: 'https://x/4.jpg', title: 'Tikka' }]);
   });
 
   it('resolves to an empty list when nothing matches', async () => {

@@ -649,6 +649,7 @@ body {
 .modal-title {
   font-size: var(--body-large-size);
   font-weight: var(--weight-bold);
+  color: var(--text-dark);
   margin: 0;
 }
 
@@ -2744,6 +2745,13 @@ body {
 
 .app-container[data-theme="dark"] .form-input::placeholder {
   color: #74757e;
+}
+
+/* Native date-picker calendar popup: without this, the browser always
+   paints it with its light UA theme, clashing with the dark modal around
+   it (it is OS/engine-rendered chrome, not styleable via normal CSS). */
+.app-container[data-theme="dark"] input[type="date"] {
+  color-scheme: dark;
 }
 
 .app-container[data-theme="dark"] .btn-secondary {

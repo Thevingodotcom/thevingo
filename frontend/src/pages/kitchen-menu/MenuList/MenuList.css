@@ -1173,6 +1173,18 @@
   border-color: rgba(52, 211, 153, 0.35);
 }
 
+/* Mobile: the sidebar becomes a fixed 64px-tall bottom tab bar
+   (see src/index.css @media (max-width: 768px) .sidebar) that sits above
+   the FAB's inline bottom: 32px / z-index: 100, hiding it. Push the FAB
+   (and the selection-mode action buttons, which share this wrapper class)
+   above the bar and over it. */
+@media (max-width: 768px) {
+  .menu-fab-wrapper {
+    bottom: 80px !important;
+    z-index: 1001 !important;
+  }
+}
+
 .app-container[data-theme="dark"] .dish-form-error-banner {
   background-color: rgba(239, 68, 68, 0.12) !important;
   border-color: #7f1d1d !important;

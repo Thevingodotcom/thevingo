@@ -335,8 +335,8 @@ function Offers({ offers, setOffers }) {
 
       {/* Floating Action Buttons */}
       {offers.some(o => o.checked) && (
-        <button 
-          className="fab-action-btn delete-btn-img-btn" 
+        <button
+          className="fab-action-btn delete-btn-img-btn menu-fab-wrapper"
           onClick={handleDeleteSelected}
           title="Delete Selected Offers"
           style={{
@@ -355,8 +355,8 @@ function Offers({ offers, setOffers }) {
         </button>
       )}
 
-      <button 
-        className="fab-action-btn add-btn-img-btn" 
+      <button
+        className="fab-action-btn add-btn-img-btn menu-fab-wrapper"
         onClick={openCreateModal}
         title="Add New Offer"
         style={{

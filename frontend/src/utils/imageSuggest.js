@@ -2,11 +2,24 @@
  * Dish image suggestions from TheMealDB's free, keyless public API.
  * https://www.themealdb.com/api.php
  *
- * Searches the full dish name first, then falls back to the last and first
- * words of the name (e.g. "Hyderabadi Chicken Biriyani" -> "Biriyani", "Hyderabadi").
+ * TheMealDB's search.php matches on a substring of the full meal name, and it
+ * is a small, Western/international recipe database, so a full Indian dish
+ * name (very common for this app) rarely matches as a whole phrase. We fall
+ * back to searching individual significant words from the name, longest
+ * first: longer words tend to be the specific dish noun (e.g. "Biryani",
+ * "Manchurian"), while short ones are usually generic regional or qualifier
+ * adjectives (e.g. "veg", "spicy", "chettinad") that match poorly or not at
+ * all. We also try a naive singular form of each word (TheMealDB entries are
+ * almost always singular, e.g. "Tikkas" -> "Tikka").
+ *
+ * This still won't find a match for dishes TheMealDB simply has no coverage
+ * for (e.g. many Indo-Chinese or regional dishes) - that's a genuine gap in
+ * the underlying free API/data set, not a bug here; callers should treat an
+ * empty result as "no suggestions found", not as a failure.
  */
 
 const MEALDB_SEARCH_URL = 'https://www.themealdb.com/api/json/v1/1/search.php?s=';
+const MAX_QUERIES = 8;
 
 const buildQueries = (dishName) => {
   const cleaned = String(dishName ?? '').replace(/[^\p{L}\p{N}\s]+/gu, ' ').replace(/\s+/g, ' ').trim();
@@ -14,9 +27,13 @@ const buildQueries = (dishName) => {
   const words = cleaned.split(' ').filter((w) => w.length >= 3);
   const queries = [cleaned];
   if (words.length > 1) {
-    queries.push(words[words.length - 1], words[0]);
+    const byLength = [...new Set(words)].sort((a, b) => b.length - a.length);
+    queries.push(...byLength);
   }
-  return [...new Set(queries.map((q) => q.toLowerCase()))];
+  for (const w of words) {
+    if (w.length > 4 && /s$/i.test(w)) queries.push(w.slice(0, -1));
+  }
+  return [...new Set(queries.map((q) => q.toLowerCase()))].slice(0, MAX_QUERIES);
 };
 
 /**

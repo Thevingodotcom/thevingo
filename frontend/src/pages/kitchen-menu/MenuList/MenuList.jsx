@@ -976,7 +976,7 @@ function MenuList({ categories, setCategories }) {
       )}
 
       {selectionCategoryId !== null ? (
-        <div style={{ position: 'fixed', bottom: '32px', right: '32px', zIndex: 100, display: 'flex', gap: '12px' }}>
+        <div className="menu-fab-wrapper" style={{ position: 'fixed', bottom: '32px', right: '32px', zIndex: 100, display: 'flex', gap: '12px' }}>
           <button
             type="button"
             onClick={handleCancelSelection}
@@ -1029,7 +1029,7 @@ function MenuList({ categories, setCategories }) {
         </div>
       ) : (
         /* Floating Action Button (FAB) toggles Options Menu */
-        <div ref={fabRef} style={{ position: 'fixed', bottom: '32px', right: '32px', zIndex: 100 }}>
+        <div ref={fabRef} className="menu-fab-wrapper" style={{ position: 'fixed', bottom: '32px', right: '32px', zIndex: 100 }}>
           {isFabMenuOpen && (
             <div className="fab-options-menu">
               <button

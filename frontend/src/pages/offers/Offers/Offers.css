@@ -28,3 +28,15 @@
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
+
+/* Mobile: the sidebar becomes a fixed 64px-tall bottom tab bar
+   (see src/index.css @media (max-width: 768px) .sidebar) that sits above
+   the FAB's inline bottom position / z-index: 100, hiding it. Push the
+   Add-offer and Delete-selected FABs (shared .menu-fab-wrapper class)
+   above the bar and over it. */
+@media (max-width: 768px) {
+  .menu-fab-wrapper {
+    bottom: 80px !important;
+    z-index: 1001 !important;
+  }
+}
