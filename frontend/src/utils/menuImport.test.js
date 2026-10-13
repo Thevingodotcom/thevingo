@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  MAX_IMPORT_FILE_BYTES,
   TEMPLATE_HEADERS,
   buildCsv,
   buildDishesCsv,
@@ -65,21 +66,22 @@ describe('parsePrice', () => {
 });
 
 describe('checkImportFile', () => {
-  it('explains that Excel files must be saved as CSV', () => {
-    const result = checkImportFile({ name: 'menu.xlsx', size: 100 });
-    expect(result.code).toBe('excel-file');
-    expect(result.message).toMatch(/CSV UTF-8/);
+  it('asks for a .csv or .xlsx file when nothing is picked', () => {
+    const result = checkImportFile(null);
+    expect(result.code).toBe('no-file');
+    expect(result.message).toMatch(/\.csv or \.xlsx/);
   });
 
-  it('rejects other file types and lists the supported one', () => {
-    const result = checkImportFile({ name: 'menu.pdf', size: 100 });
-    expect(result.code).toBe('unsupported-type');
-    expect(result.message).toMatch(/\.csv/);
-  });
-
-  it('rejects empty files and accepts csv', () => {
-    expect(checkImportFile({ name: 'menu.csv', size: 0 }).code).toBe('empty-file');
+  it('does not judge the type by the extension (the content decides later)', () => {
+    expect(checkImportFile({ name: 'menu.xlsx', size: 100 })).toBeNull();
+    expect(checkImportFile({ name: 'menu.pdf', size: 100 })).toBeNull();
+    expect(checkImportFile({ name: 'menu', size: 100 })).toBeNull();
     expect(checkImportFile({ name: 'MENU.CSV', size: 10 })).toBeNull();
+  });
+
+  it('rejects empty and oversized files', () => {
+    expect(checkImportFile({ name: 'menu.csv', size: 0 }).code).toBe('empty-file');
+    expect(checkImportFile({ name: 'menu.xlsx', size: MAX_IMPORT_FILE_BYTES + 1 }).code).toBe('too-large');
   });
 });
 

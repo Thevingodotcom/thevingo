@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { API_URL } from '../../../config';
 import { haptics } from '../../../utils/haptics';
 import authStorage from '../../../app/authStorage';
@@ -14,6 +14,8 @@ import {
   groupIssuesByRow,
   validateMenuImport
 } from '../../../utils/menuImport';
+import { IMPORT_FILE_ACCEPT, buildTemplateWorkbookBlob, readImportFile } from '../../../utils/menuImportExcel';
+import { downloadBlob } from '../../../utils/download';
 import { runMenuImport } from './runMenuImport';
 
 const VISIBLE_ISSUE_LIMIT = 50;
@@ -26,13 +28,6 @@ const STEPS = [
 ];
 
 const plural = (count, one, many = `${one}s`) => `${count} ${count === 1 ? one : many}`;
-
-const readFileText = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(String(reader.result || ''));
-  reader.onerror = () => reject(reader.error || new Error('read failed'));
-  reader.readAsText(file);
-});
 
 // Let the browser paint the current step before doing synchronous work.
 const nextTick = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -48,6 +43,11 @@ const downloadCsv = (fileName, csv) => {
 };
 
 const baseName = (fileName) => String(fileName || 'menu').replace(/\.[^.]+$/, '');
+
+const EXCEL_TEMPLATE_NAME = 'vingo_menu_template.xlsx';
+const CSV_TEMPLATE_NAME = 'vingo_menu_template.csv';
+const TEMPLATE_BUTTON_ID = 'menu-import-template-btn';
+const TEMPLATE_MENU_ID = 'menu-import-template-menu';
 
 /* ---------- Icons ---------- */
 const CheckIcon = () => (
@@ -187,7 +187,7 @@ function FilePicker({ label, onFile, variant = 'primary' }) {
       {label}
       <input
         type="file"
-        accept=".csv,text/csv,.xlsx,.xls"
+        accept={IMPORT_FILE_ACCEPT}
         className="menu-import-file-input"
         data-testid="menu-import-input"
         onChange={(e) => {
@@ -200,6 +200,108 @@ function FilePicker({ label, onFile, variant = 'primary' }) {
   );
 }
 
+const ChevronIcon = () => (
+  <svg className="menu-import-template-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <polyline points="6 9 12 15 18 9"></polyline>
+  </svg>
+);
+
+/**
+ * "Download template" button with an Excel / CSV choice. The open state lives
+ * in the dialog so its document-level Escape handler can close just this menu
+ * instead of the whole dialog.
+ */
+function TemplateDownloadMenu({ open, onOpenChange, busy, error, onExcel, onCsv }) {
+  const wrapRef = useRef(null);
+  const buttonRef = useRef(null);
+  const menuRef = useRef(null);
+
+  const menuItems = () => Array.from(menuRef.current?.querySelectorAll('[role="menuitem"]') || []);
+
+  useEffect(() => {
+    if (!open) return undefined;
+    menuItems()[0]?.focus();
+    const onOutside = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) onOpenChange(false);
+    };
+    document.addEventListener('mousedown', onOutside);
+    document.addEventListener('touchstart', onOutside);
+    return () => {
+      document.removeEventListener('mousedown', onOutside);
+      document.removeEventListener('touchstart', onOutside);
+    };
+  }, [open, onOpenChange]);
+
+  const onMenuKeyDown = (e) => {
+    const items = menuItems();
+    const index = items.indexOf(document.activeElement);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const step = e.key === 'ArrowDown' ? 1 : -1;
+      items[(index + step + items.length) % items.length]?.focus();
+    } else if (e.key === 'Home' || e.key === 'End') {
+      e.preventDefault();
+      items[e.key === 'Home' ? 0 : items.length - 1]?.focus();
+    } else if (e.key === 'Tab') {
+      onOpenChange(false);
+    }
+  };
+
+  const choose = (action) => {
+    onOpenChange(false);
+    buttonRef.current?.focus();
+    action();
+  };
+
+  return (
+    <div className="menu-import-template" ref={wrapRef}>
+      <button
+        ref={buttonRef}
+        type="button"
+        id={TEMPLATE_BUTTON_ID}
+        className="menu-import-template-btn"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? TEMPLATE_MENU_ID : undefined}
+        aria-busy={busy || undefined}
+        onClick={() => { if (!busy) onOpenChange(!open); }}
+        onKeyDown={(e) => {
+          if (!open && !busy && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+            e.preventDefault();
+            onOpenChange(true);
+          }
+        }}
+      >
+        <span>{busy ? 'Preparing Excel template…' : 'Download template'}</span>
+        {!busy && <ChevronIcon />}
+      </button>
+      {open && (
+        <div
+          ref={menuRef}
+          id={TEMPLATE_MENU_ID}
+          className="menu-import-template-menu"
+          role="menu"
+          aria-labelledby={TEMPLATE_BUTTON_ID}
+          onKeyDown={onMenuKeyDown}
+        >
+          <button type="button" role="menuitem" className="menu-import-template-item" onClick={() => choose(onExcel)}>
+            <span className="menu-import-template-item-title">
+              Excel template (.xlsx)
+              <span className="menu-import-template-badge">Recommended</span>
+            </span>
+            <span className="menu-import-template-item-sub">Dropdowns for veg type &amp; availability</span>
+          </button>
+          <button type="button" role="menuitem" className="menu-import-template-item" onClick={() => choose(onCsv)}>
+            <span className="menu-import-template-item-title">CSV template (.csv)</span>
+            <span className="menu-import-template-item-sub">Plain text for any spreadsheet app</span>
+          </button>
+        </div>
+      )}
+      {error && <p className="menu-import-template-error" role="alert">{error}</p>}
+    </div>
+  );
+}
+
 /* ---------- Dialog ---------- */
 function MenuImportDialog({ categories, setCategories, onClose, onMenuChanged }) {
   // phase: select | reading | validating | invalid | importing | done
@@ -209,7 +311,23 @@ function MenuImportDialog({ categories, setCategories, onClose, onMenuChanged })
   const [progress, setProgress] = useState({ step: null, done: 0, total: 0, dishTotal: 0, categoryTotal: 0, currentName: '' });
   const [outcome, setOutcome] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
+  const [templateBusy, setTemplateBusy] = useState(false);
+  const [templateError, setTemplateError] = useState('');
   const busyRef = useRef(false);
+  const templateMenuOpenRef = useRef(false);
+  const templateBusyRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  const setTemplateMenu = useCallback((open) => {
+    templateMenuOpenRef.current = open;
+    setTemplateMenuOpen(open);
+  }, []);
 
   const busy = phase === 'reading' || phase === 'validating' || phase === 'importing';
 
@@ -222,11 +340,18 @@ function MenuImportDialog({ categories, setCategories, onClose, onMenuChanged })
 
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === 'Escape' && !busyRef.current) onClose();
+      if (e.key !== 'Escape') return;
+      // Escape with the template menu open closes only that menu.
+      if (templateMenuOpenRef.current) {
+        setTemplateMenu(false);
+        document.getElementById(TEMPLATE_BUTTON_ID)?.focus();
+        return;
+      }
+      if (!busyRef.current) onClose();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, setTemplateMenu]);
 
   const showInvalid = (result) => {
     setValidation(result);
@@ -262,6 +387,8 @@ function MenuImportDialog({ categories, setCategories, onClose, onMenuChanged })
     setFileName(file.name);
     setValidation(null);
     setOutcome(null);
+    setTemplateMenu(false);
+    setTemplateError('');
     setPhase('reading');
 
     try {
@@ -271,17 +398,16 @@ function MenuImportDialog({ categories, setCategories, onClose, onMenuChanged })
         return;
       }
 
-      let text;
-      try {
-        text = await readFileText(file);
-      } catch {
-        showInvalid({ ok: false, fileErrors: [{ code: 'read-failed', title: "The file couldn't be read", message: 'It may have been moved, or it is still open and locked by another program. Close it and try again.' }], errors: [], warnings: [] });
+      // The type (CSV or .xlsx) is detected from the content; Excel sheets come back as CSV text.
+      const read = await readImportFile(file);
+      if (read.fileError) {
+        showInvalid({ ok: false, fileErrors: [read.fileError], errors: [], warnings: [] });
         return;
       }
 
       setPhase('validating');
       await nextTick();
-      const result = validateMenuImport(text, { existingCategories: categories });
+      const result = validateMenuImport(read.text, { existingCategories: categories });
       if (!result.ok) {
         showInvalid(result);
         return;
@@ -328,11 +454,39 @@ function MenuImportDialog({ categories, setCategories, onClose, onMenuChanged })
     if (file && !busy) handleFile(file);
   };
 
-  const downloadTemplate = () => downloadCsv('vingo_menu_template.csv', buildTemplateCsv());
+  const downloadCsvTemplate = () => {
+    setTemplateError('');
+    downloadCsv(CSV_TEMPLATE_NAME, buildTemplateCsv());
+  };
+
+  const downloadExcelTemplate = async () => {
+    if (templateBusyRef.current) return;
+    templateBusyRef.current = true;
+    setTemplateError('');
+    setTemplateBusy(true);
+    try {
+      const blob = await buildTemplateWorkbookBlob({
+        existingCategories: categories.map(cat => cat.name).filter(Boolean)
+      });
+      downloadBlob(blob, EXCEL_TEMPLATE_NAME);
+    } catch (err) {
+      console.error('Template error:', err);
+      if (mountedRef.current) setTemplateError("The Excel template couldn't be created. Please try again, or download the CSV template instead.");
+    } finally {
+      templateBusyRef.current = false;
+      if (mountedRef.current) setTemplateBusy(false);
+    }
+  };
   const downloadReport = () => downloadCsv(`${baseName(fileName)}_errors.csv`, buildIssueReportCsv(validation || {}));
 
-  const templateLink = (
-    <button type="button" className="menu-import-link" onClick={downloadTemplate}>Download sample CSV template</button>
+  const templateLinks = (
+    <>
+      <button type="button" className="menu-import-link" onClick={downloadExcelTemplate} aria-busy={templateBusy || undefined}>
+        {templateBusy ? 'Preparing Excel template…' : 'Download Excel template'}
+      </button>
+      {' · '}
+      <button type="button" className="menu-import-link" onClick={downloadCsvTemplate}>Download sample CSV template</button>
+    </>
   );
 
   /* ----- Views ----- */
@@ -340,10 +494,12 @@ function MenuImportDialog({ categories, setCategories, onClose, onMenuChanged })
     <div className="menu-import-body">
       <p className="menu-import-heading">Instructions:</p>
       <ol className="menu-import-instructions">
-        <li>Download the Excel template using the button below.</li>
-        <li>Add one dish per row. Required columns: <strong>{MENU_IMPORT_COLUMNS.filter(c => c.required).map(c => c.label).join(', ')}</strong>.</li>
-        <li>Save the completed file as a <strong>.csv</strong> file (Excel: File → Save As → CSV UTF-8).</li>
-        <li>Click "Choose CSV File" to select and import your menu.</li>
+        <li>Download the template (Excel or CSV).</li>
+        <li>
+          Add one dish per row. Required columns: <strong>{MENU_IMPORT_COLUMNS.filter(c => c.required).map(c => c.label).join(', ')}</strong>.
+          {' '}In the Excel template, pick Veg Type and availability from the dropdowns.
+        </li>
+        <li>Click "Choose File" to upload your <strong>.xlsx</strong> or <strong>.csv</strong> file — the file type is detected automatically.</li>
       </ol>
       {categories.length > 0 && (
         <p className="menu-import-note">
@@ -351,9 +507,14 @@ function MenuImportDialog({ categories, setCategories, onClose, onMenuChanged })
         </p>
       )}
 
-      <button type="button" className="menu-import-template-btn" onClick={downloadTemplate}>
-        Download Excel/CSV Template
-      </button>
+      <TemplateDownloadMenu
+        open={templateMenuOpen}
+        onOpenChange={setTemplateMenu}
+        busy={templateBusy}
+        error={templateError}
+        onExcel={downloadExcelTemplate}
+        onCsv={downloadCsvTemplate}
+      />
 
       <div
         className={`menu-import-dropzone${isDragging ? ' is-dragging' : ''}`}
@@ -361,8 +522,8 @@ function MenuImportDialog({ categories, setCategories, onClose, onMenuChanged })
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
       >
-        <FilePicker label="Choose CSV File" onFile={handleFile} />
-        <p className="menu-import-dropzone-hint">or drag and drop it here · .csv up to {Math.round(MAX_IMPORT_FILE_BYTES / (1024 * 1024))} MB</p>
+        <FilePicker label="Choose File" onFile={handleFile} />
+        <p className="menu-import-dropzone-hint">or drag and drop it here · .csv or .xlsx up to {Math.round(MAX_IMPORT_FILE_BYTES / (1024 * 1024))} MB</p>
       </div>
     </div>
   );
@@ -380,7 +541,7 @@ function MenuImportDialog({ categories, setCategories, onClose, onMenuChanged })
               {fileErrors.length ? "This file can't be imported" : `Found ${plural(errors.length, 'problem')} in ${plural(rowCount, 'row')}`}
             </p>
             <p className="menu-import-result-sub">
-              <strong>{fileName}</strong> — nothing was imported. Fix {problemCount === 1 ? 'the problem' : 'the problems'} below in your spreadsheet, save it as CSV and choose it again.
+              <strong>{fileName}</strong> — nothing was imported. Fix {problemCount === 1 ? 'the problem' : 'the problems'} below in your spreadsheet, save it and choose it again.
             </p>
           </div>
         </div>
@@ -405,8 +566,9 @@ function MenuImportDialog({ categories, setCategories, onClose, onMenuChanged })
           )}
         </div>
         <p className="menu-import-footnote">
-          Expected header row: <code>{TEMPLATE_HEADERS.join(',')}</code> · {templateLink}
+          Expected header row: <code>{TEMPLATE_HEADERS.join(',')}</code> · {templateLinks}
         </p>
+        {templateError && <p className="menu-import-template-error" role="alert">{templateError}</p>}
       </div>
     );
   };

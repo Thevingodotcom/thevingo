@@ -82,6 +82,9 @@ const broadcastMenuUpdate = (payload = {}) => {
   }
 };
 
+// Availability flags arrive as booleans, 0/1 or 'true'/'false' depending on the source.
+const isFlagSet = (value) => value === true || value === 1 || value === 'true';
+
 const revokeBlobUrl = (url) => {
   if (url && typeof url === 'string' && url.startsWith('blob:')) {
     try { URL.revokeObjectURL(url); } catch { /* ignore */ }
@@ -908,6 +911,8 @@ function MenuList({ categories, setCategories }) {
                       onClick={() => {
                         if (selectionCategoryId === category.id) {
                           handleToggleSelectDish(item.id);
+                        } else if (viewMode === 'list') {
+                          handleOpenEditModal(item, category);
                         } else {
                           handleOpenDishDetails(item, category);
                         }
@@ -946,6 +951,14 @@ function MenuList({ categories, setCategories }) {
                             </div>
                             <span className="veg-text landing_body">Veg</span>
                           </div>
+
+                          {viewMode === 'list' && (
+                            <div className="food-avail-group" aria-label="Availability">
+                              <span className={`dish-avail-badge${isFlagSet(item.availableBreakfast) ? ' is-available' : ''}`}>Breakfast</span>
+                              <span className={`dish-avail-badge${isFlagSet(item.availableLunch) ? ' is-available' : ''}`}>Lunch</span>
+                              <span className={`dish-avail-badge${isFlagSet(item.availableDinner) ? ' is-available' : ''}`}>Dinner</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </article>
@@ -1302,13 +1315,13 @@ function MenuList({ categories, setCategories }) {
                     <span className="dish-details-avail-label">
                       Availability:
                     </span>
-                    <span className={`dish-avail-badge${selectedDish.availableBreakfast ? ' is-available' : ''}`}>
+                    <span className={`dish-avail-badge${isFlagSet(selectedDish.availableBreakfast) ? ' is-available' : ''}`}>
                       Breakfast
                     </span>
-                    <span className={`dish-avail-badge${selectedDish.availableLunch ? ' is-available' : ''}`}>
+                    <span className={`dish-avail-badge${isFlagSet(selectedDish.availableLunch) ? ' is-available' : ''}`}>
                       Lunch
                     </span>
-                    <span className={`dish-avail-badge${selectedDish.availableDinner ? ' is-available' : ''}`}>
+                    <span className={`dish-avail-badge${isFlagSet(selectedDish.availableDinner) ? ' is-available' : ''}`}>
                       Dinner
                     </span>
                   </div>
@@ -1537,7 +1550,9 @@ function MenuList({ categories, setCategories }) {
                   className="btn-cancel-dish"
                   onClick={() => {
                     setIsEditModalOpen(false);
-                    setIsDetailsModalOpen(true);
+                    // Grid view reaches Edit via Dish details, so Cancel returns there;
+                    // list view opens Edit directly and should just close.
+                    if (viewMode !== 'list') setIsDetailsModalOpen(true);
                   }}
                   disabled={editLoading}
                 >

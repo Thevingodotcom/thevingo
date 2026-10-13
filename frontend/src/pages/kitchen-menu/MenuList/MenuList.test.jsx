@@ -1,7 +1,18 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import ExcelJS from 'exceljs';
 import MenuList from './MenuList';
+import { buildTemplateWorkbookBlob } from '../../../utils/menuImportExcel';
+import { downloadBlob } from '../../../utils/download';
+
+// Only the template builder is mocked; file detection/parsing stays real.
+vi.mock('../../../utils/menuImportExcel', async (importOriginal) => ({
+  ...(await importOriginal()),
+  buildTemplateWorkbookBlob: vi.fn(async () => new Blob(['xlsx'], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+}));
+// jsdom has no URL.createObjectURL; record downloads instead.
+vi.mock('../../../utils/download', () => ({ downloadBlob: vi.fn() }));
 
 // Mock global fetch
 const mockFetch = vi.fn();
@@ -305,10 +316,166 @@ describe('MenuList Dish Details and Edit Functionality', () => {
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
-    it('explains that Excel files must be saved as CSV', async () => {
-      openAndPick(new File(['PK'], 'menu.xlsx'));
-      expect(await screen.findByText(/Excel files \(\.xlsx\) can't be imported directly/i)).toBeInTheDocument();
-      expect(screen.getByText(/CSV UTF-8/)).toBeInTheDocument();
+    const xlsxFile = async (rows, name = 'menu.xlsx') => {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('Menu');
+      rows.forEach(row => sheet.addRow(row));
+      const buffer = await workbook.xlsx.writeBuffer();
+      return new File([buffer], name);
+    };
+
+    it('explains both formats in the instructions and accepts .csv and .xlsx', () => {
+      render(<MenuList categories={mockCategories} setCategories={vi.fn()} />);
+      fireEvent.click(screen.getByRole('button', { name: /Import menu/i }));
+
+      const dialog = screen.getByRole('dialog');
+      expect(dialog).toHaveTextContent('Download the template (Excel or CSV).');
+      expect(dialog).toHaveTextContent(/pick Veg Type and availability from the dropdowns/);
+      expect(dialog).toHaveTextContent(/the file type is detected automatically/);
+      expect(dialog).not.toHaveTextContent(/save .* as .*\.csv/i);
+      expect(screen.getByText('Choose File')).toBeInTheDocument();
+      expect(screen.getByText(/\.csv or \.xlsx up to 2 MB/)).toBeInTheDocument();
+      const accept = screen.getByTestId('menu-import-input').getAttribute('accept');
+      expect(accept).toContain('.csv');
+      expect(accept).toContain('.xlsx');
+    });
+
+    describe('template download menu', () => {
+      let downloads;
+      let clickSpy;
+      beforeEach(() => {
+        downloads = [];
+        clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function recordDownload() {
+          downloads.push(this.getAttribute('download'));
+        });
+      });
+      afterEach(() => clickSpy.mockRestore());
+
+      const openMenu = () => {
+        render(<MenuList categories={mockCategories} setCategories={vi.fn()} />);
+        fireEvent.click(screen.getByRole('button', { name: /Import menu/i }));
+        const button = screen.getByRole('button', { name: /Download template/i });
+        expect(button).toHaveAttribute('aria-haspopup', 'menu');
+        expect(button).toHaveAttribute('aria-expanded', 'false');
+        fireEvent.click(button);
+        return button;
+      };
+
+      it('offers Excel (first) and CSV, and Escape closes only the menu', () => {
+        const button = openMenu();
+        expect(button).toHaveAttribute('aria-expanded', 'true');
+        const items = screen.getAllByRole('menuitem');
+        expect(items).toHaveLength(2);
+        expect(items[0]).toHaveTextContent('Excel template (.xlsx)');
+        expect(items[0]).toHaveTextContent(/Dropdowns for veg type & availability/);
+        expect(items[1]).toHaveTextContent('CSV template (.csv)');
+        expect(items[0]).toHaveFocus();
+
+        fireEvent.keyDown(items[0], { key: 'Escape' });
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+        expect(button).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+        // With the menu closed, Escape closes the dialog as before.
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+
+      it('closes the menu on an outside click', () => {
+        openMenu();
+        expect(screen.getByRole('menu')).toBeInTheDocument();
+        fireEvent.mouseDown(screen.getByText('Instructions:'));
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+      });
+
+      it('downloads the CSV template', () => {
+        openMenu();
+        fireEvent.click(screen.getByRole('menuitem', { name: /CSV template/i }));
+        expect(downloads).toEqual(['vingo_menu_template.csv']);
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+        expect(buildTemplateWorkbookBlob).not.toHaveBeenCalled();
+      });
+
+      it('builds and downloads the Excel template with the current categories', async () => {
+        openMenu();
+        fireEvent.click(screen.getByRole('menuitem', { name: /Excel template/i }));
+        expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+
+        await waitFor(() => expect(downloadBlob).toHaveBeenCalledTimes(1));
+        expect(buildTemplateWorkbookBlob).toHaveBeenCalledWith({ existingCategories: ['Biriyani'] });
+        expect(downloadBlob.mock.calls[0][0]).toBeInstanceOf(Blob);
+        expect(downloadBlob.mock.calls[0][1]).toBe('vingo_menu_template.xlsx');
+        expect(await screen.findByRole('button', { name: /Download template/i })).toBeInTheDocument();
+        expect(downloads).toEqual([]);
+      });
+
+      it('keeps the template links working on the problems screen', async () => {
+        render(<MenuList categories={mockCategories} setCategories={vi.fn()} />);
+        fireEvent.click(screen.getByRole('button', { name: /Import menu/i }));
+        fireEvent.change(screen.getByTestId('menu-import-input'), { target: { files: [csvFile(['Biriyani,Mutton Biriyani,abc,non_veg,0,1,1'])] } });
+
+        fireEvent.click(await screen.findByRole('button', { name: /Download sample CSV template/i }));
+        expect(downloads).toEqual(['vingo_menu_template.csv']);
+
+        fireEvent.click(screen.getByRole('button', { name: /Download Excel template/i }));
+        await waitFor(() => expect(downloadBlob).toHaveBeenCalledWith(expect.any(Blob), 'vingo_menu_template.xlsx'));
+      });
+
+      it('shows an inline error when the Excel template cannot be built', async () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        buildTemplateWorkbookBlob.mockRejectedValueOnce(new Error('chunk failed'));
+        openMenu();
+        fireEvent.click(screen.getByRole('menuitem', { name: /Excel template/i }));
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(/Excel template couldn't be created/);
+        expect(downloadBlob).not.toHaveBeenCalled();
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        consoleSpy.mockRestore();
+      });
+    });
+
+    it('imports dishes from a real .xlsx workbook', async () => {
+      mockFetch
+        .mockResolvedValueOnce(okDish('301', 'Mutton Biriyani'))
+        .mockResolvedValueOnce(okDish('302', 'Veg Biriyani'));
+      const file = await xlsxFile([
+        ['Category', 'Dish Name', 'Price', 'Veg Type', 'Breakfast', 'Lunch', 'Dinner'],
+        ['Biriyani', 'Mutton Biriyani', 320, 'Non Veg', 'No', 'Yes', 'Yes'],
+        ['Biriyani', 'Veg Biriyani', 200, 'Veg', 'Yes', 'Yes', 'No']
+      ]);
+
+      openAndPick(file);
+
+      expect(await screen.findByText('Imported 2 of 2 dishes', {}, { timeout: 5000 })).toBeInTheDocument();
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toMatchObject({
+        name: 'Mutton Biriyani', price: 320, categoryId: '1', isVeg: false,
+        availableBreakfast: false, availableLunch: true, availableDinner: true
+      });
+      expect(JSON.parse(mockFetch.mock.calls[1][1].body)).toMatchObject({
+        name: 'Veg Biriyani', price: 200, isVeg: true,
+        availableBreakfast: true, availableLunch: true, availableDinner: false
+      });
+    });
+
+    it('imports a CSV file that has no extension', async () => {
+      mockFetch.mockResolvedValueOnce(okDish('301', 'Mutton Biriyani'));
+      openAndPick(new File([[HEADER, 'Biriyani,Mutton Biriyani,320,non_veg,0,1,1'].join('\r\n')], 'menu'));
+
+      expect(await screen.findByText('Imported 1 of 1 dish')).toBeInTheDocument();
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toMatchObject({ name: 'Mutton Biriyani', price: 320 });
+    });
+
+    it('rejects a legacy .xls workbook without calling the API', async () => {
+      const oleHeader = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+      const bytes = new Uint8Array(512);
+      bytes.set(oleHeader);
+      openAndPick(new File([bytes], 'menu.xls'));
+
+      expect(await screen.findByText("This file can't be imported")).toBeInTheDocument();
+      expect(screen.getByText(/Old Excel format \(\.xls\)/)).toBeInTheDocument();
+      expect(screen.getByText(/save it and choose it again/)).toBeInTheDocument();
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
@@ -412,6 +579,34 @@ describe('MenuList Dish Details and Edit Functionality', () => {
       const foodGrid = screen.getByText('Hyderabadi Chicken Biriyani').closest('.food-grid');
       expect(foodGrid).toHaveClass('list-view');
       expect(screen.getByTitle('List view')).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('shows availability badges on each row in list view only', () => {
+      render(<MenuList categories={mockCategories} setCategories={vi.fn()} />);
+      const card = screen.getByText('Hyderabadi Chicken Biriyani').closest('article');
+      expect(card.querySelector('.food-avail-group')).toBeNull();
+
+      fireEvent.click(screen.getByTitle('List view'));
+      const badges = card.querySelectorAll('.food-avail-group .dish-avail-badge');
+      expect([...badges].map(b => b.textContent)).toEqual(['Breakfast', 'Lunch', 'Dinner']);
+      expect(badges[0]).not.toHaveClass('is-available');
+      expect(badges[1]).toHaveClass('is-available');
+      expect(badges[2]).toHaveClass('is-available');
+    });
+
+    it('opens the edit form directly when a dish is clicked in list view', () => {
+      window.localStorage.setItem('thevingo_menu_view', 'list');
+      render(<MenuList categories={mockCategories} setCategories={vi.fn()} />);
+
+      fireEvent.click(screen.getByText('Hyderabadi Chicken Biriyani').closest('article'));
+
+      expect(screen.queryByText('Dish details')).not.toBeInTheDocument();
+      expect(screen.getByDisplayValue('Hyderabadi Chicken Biriyani')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Save changes/i })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole('button', { name: /^Cancel$/i }));
+      expect(screen.queryByRole('button', { name: /Save changes/i })).not.toBeInTheDocument();
+      expect(screen.queryByText('Dish details')).not.toBeInTheDocument();
     });
   });
 

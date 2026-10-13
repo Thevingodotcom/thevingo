@@ -1,18 +1,18 @@
 /**
  * Menu import: CSV parsing + validation (pure functions, no React).
  *
- * The kitchen-menu "Import menu" dialog reads a CSV exported from Excel /
- * Google Sheets, validates every row up front and only then talks to the
- * server. Everything here is synchronous and side-effect free so it can be
- * unit tested in isolation.
+ * The kitchen-menu "Import menu" dialog accepts a CSV (from Excel / Google
+ * Sheets) or an .xlsx workbook, validates every row up front and only then
+ * talks to the server. Workbooks are first converted to the same CSV text by
+ * menuImportExcel.js (readImportFile), so everything here works on CSV text.
+ * It is synchronous and side-effect free so it can be unit tested in
+ * isolation.
  *
  * Row numbers in every message are the numbers a user sees in a spreadsheet:
  * the header is row 1, the first dish is row 2. A quoted value that spans
  * several lines still counts as one spreadsheet row.
  */
 
-export const SUPPORTED_EXTENSIONS = ['.csv'];
-export const EXCEL_EXTENSIONS = ['.xlsx', '.xls', '.xlsm', '.xlsb', '.ods', '.numbers'];
 export const MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024; // 2 MB
 export const MAX_IMPORT_ROWS = 1000;
 
@@ -62,37 +62,19 @@ export const normalizeHeader = (value) => String(value ?? '')
   .replace(/[^a-z0-9]+/g, ' ')
   .trim();
 
-const getExtension = (fileName) => {
-  const match = /\.[^./\\]+$/.exec(String(fileName || ''));
-  return match ? match[0].toLowerCase() : '';
-};
-
 const formatBytes = (bytes) => (bytes >= 1024 * 1024
   ? `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 
 /**
- * Checks the picked file before reading it (name, extension, size).
- * Returns a file-level issue or null when the file looks acceptable.
+ * Checks the picked file before reading it (presence and size). The type is
+ * not judged by the extension: readImportFile (menuImportExcel.js) decides
+ * CSV vs .xlsx from the file's content. Returns a file-level issue or null
+ * when the file looks acceptable.
  */
 export function checkImportFile(file) {
   if (!file) {
-    return { code: 'no-file', title: 'No file selected', message: 'Choose a .csv file to import.' };
-  }
-  const ext = getExtension(file.name);
-  if (EXCEL_EXTENSIONS.includes(ext)) {
-    return {
-      code: 'excel-file',
-      title: `Excel files (${ext}) can't be imported directly`,
-      message: 'Open the file in Excel and choose File → Save As → "CSV UTF-8 (Comma delimited) (*.csv)", then import the saved .csv file. In Google Sheets use File → Download → Comma-separated values (.csv).'
-    };
-  }
-  if (!SUPPORTED_EXTENSIONS.includes(ext)) {
-    return {
-      code: 'unsupported-type',
-      title: ext ? `Unsupported file type (${ext})` : 'Unsupported file type',
-      message: `"${file.name}" is not a CSV file. Only ${SUPPORTED_EXTENSIONS.join(', ')} files are supported — download the template, fill it in and save it as CSV.`
-    };
+    return { code: 'no-file', title: 'No file selected', message: 'Choose a .csv or .xlsx file to import.' };
   }
   if (typeof file.size === 'number' && file.size === 0) {
     return { code: 'empty-file', title: 'The file is empty', message: `"${file.name}" has no content. Add your dishes below the header row and save it again.` };
