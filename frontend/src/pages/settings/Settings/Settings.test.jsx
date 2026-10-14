@@ -35,6 +35,12 @@ const renderSettings = (props = {}) => render(
 describe('Settings menu download', () => {
   beforeEach(() => {
     vi.mocked(downloadMenu).mockReset();
+    // The Dish backup card loads its status on mount; never hit the network.
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, available: false, enabled: false, retentionDays: 30, trashCount: 0 })
+    }));
   });
 
   it('offers Excel, PDF and Image downloads of the menu', async () => {

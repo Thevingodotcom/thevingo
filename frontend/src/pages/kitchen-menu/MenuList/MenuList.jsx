@@ -2,10 +2,13 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { API_URL, DEFAULT_DISH_IMAGE, getImageUrl, hasDishImage } from '../../../config';
 import { haptics } from '../../../utils/haptics';
 import authStorage from '../../../app/authStorage';
+import { useDishBackup } from '../../../app/useDishBackup';
+import { getBackupMode } from '../../../app/dishBackupApi';
 import filterIcon from '../../../assets/icons/filterIcon.svg';
 import addBtnIcon from '../../../assets/icons/Add.svg';
 import DishImageField from './DishImageField';
 import MenuImportDialog from './MenuImportDialog';
+import TrashDialog from './TrashDialog';
 import './MenuList.css';
 
 // Inline Icons
@@ -70,6 +73,15 @@ const WarningIcon = () => (
   </svg>
 );
 
+const TrashSmallIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <polyline points="3 6 5 6 21 6"></polyline>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+  </svg>
+);
+
+const dishCountText = (count) => `${count} dish${count === 1 ? '' : 'es'}`;
+
 const broadcastMenuUpdate = (payload = {}) => {
   try {
     if (typeof BroadcastChannel !== 'undefined') {
@@ -91,9 +103,47 @@ const revokeBlobUrl = (url) => {
   }
 };
 
-function MenuList({ categories, setCategories }) {
+function MenuList({ categories, setCategories, onMenuRefresh, openTrashRequested = false, onTrashRequestHandled }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Dish backup setting decides the delete wording and whether Trash is offered.
+  // 'on' -> deleted dishes go to Trash, 'off' -> permanent, 'unavailable' -> today's behaviour.
+  const dishBackup = useDishBackup();
+  const backupMode = getBackupMode(dishBackup);
+  const isTrashAvailable = backupMode !== 'unavailable';
+  const { reload: reloadDishBackup } = dishBackup;
+  const [isTrashOpen, setIsTrashOpen] = useState(false);
+
+  // Settings -> "Open Trash" navigates here with a request to open Trash once
+  // the backup status is known (ignored when the feature is unavailable).
+  useEffect(() => {
+    if (!openTrashRequested || dishBackup.status === 'loading') return;
+    if (isTrashAvailable) setIsTrashOpen(true);
+    onTrashRequestHandled?.();
+  }, [openTrashRequested, dishBackup.status, isTrashAvailable, onTrashRequestHandled]);
+
+  // Keep the Trash count fresh after a delete when dishes may have gone to Trash.
+  const refreshTrashCountAfterDelete = () => {
+    if (backupMode === 'on') reloadDishBackup();
+  };
+
+  const openTrash = () => {
+    haptics?.light?.();
+    setIsFabMenuOpen(false);
+    setIsTrashOpen(true);
+  };
+
+  const closeTrash = useCallback(() => setIsTrashOpen(false), []);
+
+  const handleTrashChanged = useCallback((change) => {
+    reloadDishBackup();
+    if (change?.type === 'restore') {
+      // Restored dishes (and revived categories) come from the server.
+      onMenuRefresh?.();
+      broadcastMenuUpdate();
+    }
+  }, [reloadDishBackup, onMenuRefresh]);
 
   // Custom Filter Dialog States
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -383,9 +433,24 @@ function MenuList({ categories, setCategories }) {
     setSelectedDishIds([]);
   };
 
-  const handleDeleteSelectedDishes = async () => {
+  // Delete-selected-dishes confirmation dialog + in-flight flag
+  const [isDeleteDishesOpen, setIsDeleteDishesOpen] = useState(false);
+  const [isDeletingDishes, setIsDeletingDishes] = useState(false);
+
+  const requestDeleteSelectedDishes = () => {
     if (selectedDishIds.length === 0) return;
-    if (!window.confirm(`Are you sure you want to delete the ${selectedDishIds.length} selected dishes?`)) return;
+    haptics?.warning?.();
+    setIsDeleteDishesOpen(true);
+  };
+
+  const handleCancelDeleteDishes = () => {
+    if (isDeletingDishes) return;
+    setIsDeleteDishesOpen(false);
+  };
+
+  const handleDeleteSelectedDishes = async () => {
+    if (selectedDishIds.length === 0 || isDeletingDishes) return;
+    setIsDeletingDishes(true);
 
     try {
       const token = authStorage.getToken();
@@ -410,15 +475,22 @@ function MenuList({ categories, setCategories }) {
         }));
         setSelectionCategoryId(null);
         setSelectedDishIds([]);
+        setIsDeleteDishesOpen(false);
+        haptics?.success?.();
+        refreshTrashCountAfterDelete();
 
         // Instant cross-tab broadcast
         broadcastMenuUpdate();
       } else {
+        haptics?.error?.();
         alert('Failed to delete selected dishes.');
       }
     } catch (err) {
       console.error(err);
+      haptics?.error?.();
       alert('Error deleting selected dishes.');
+    } finally {
+      setIsDeletingDishes(false);
     }
   };
 
@@ -468,6 +540,7 @@ function MenuList({ categories, setCategories }) {
         }
         setCategoryToDelete(null);
         haptics?.success?.();
+        refreshTrashCountAfterDelete();
 
         // Instant cross-tab broadcast
         broadcastMenuUpdate();
@@ -486,6 +559,7 @@ function MenuList({ categories, setCategories }) {
 
   // Delete-all confirmation dialog: boolean open state + in-flight flag
   const [isDeleteAllOpen, setIsDeleteAllOpen] = useState(false);
+  const totalDishCount = categories.reduce((sum, cat) => sum + (cat.items?.length || 0), 0);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   const requestDeleteAll = () => {
@@ -519,6 +593,7 @@ function MenuList({ categories, setCategories }) {
         setSelectedDishIds([]);
         setIsDeleteAllOpen(false);
         haptics?.success?.();
+        refreshTrashCountAfterDelete();
 
         // Instant cross-tab broadcast
         broadcastMenuUpdate();
@@ -828,6 +903,20 @@ function MenuList({ categories, setCategories }) {
           <ImportIcon />
           Import menu
         </button>
+
+        {isTrashAvailable && (
+          <button
+            type="button"
+            className="menu-trash-btn"
+            onClick={openTrash}
+            title={`Trash: ${dishCountText(dishBackup.trashCount)} you can restore`}
+            aria-label={`Open Trash (${dishCountText(dishBackup.trashCount)})`}
+          >
+            <TrashSmallIcon />
+            Trash
+            <span className="menu-trash-count" aria-hidden="true">{dishBackup.trashCount}</span>
+          </button>
+        )}
       </div>
 
       {hasActiveFilters && (
@@ -985,6 +1074,11 @@ function MenuList({ categories, setCategories }) {
           <button type="button" className="menu-empty-import-btn" onClick={openImportModal}>
             Import menu
           </button>
+          {isTrashAvailable && dishBackup.trashCount > 0 && (
+            <button type="button" className="menu-empty-trash-link" onClick={openTrash}>
+              Restore deleted dishes from Trash ({dishBackup.trashCount})
+            </button>
+          )}
         </div>
       )}
 
@@ -1015,7 +1109,7 @@ function MenuList({ categories, setCategories }) {
           
           <button
             type="button"
-            onClick={handleDeleteSelectedDishes}
+            onClick={requestDeleteSelectedDishes}
             style={{
               width: '50px',
               height: '50px',
@@ -1073,6 +1167,16 @@ function MenuList({ categories, setCategories }) {
               >
                 Import menu
               </button>
+              {isTrashAvailable && (
+                <button
+                  type="button"
+                  className="fab-option-item fab-option-trash"
+                  onClick={openTrash}
+                  aria-label={`Trash (${dishCountText(dishBackup.trashCount)})`}
+                >
+                  Trash ({dishBackup.trashCount})
+                </button>
+              )}
               {categories.length > 0 && (
                 <button
                   type="button"
@@ -1604,7 +1708,7 @@ function MenuList({ categories, setCategories }) {
 
       {/* Delete Category Confirmation */}
       {categoryToDelete && (
-        <div className="modal-overlay" onClick={handleCancelDeleteCategory}>
+        <div className="modal-overlay menu-confirm-overlay" onClick={handleCancelDeleteCategory}>
           <div
             className="category-modal-content"
             role="alertdialog"
@@ -1624,12 +1728,16 @@ function MenuList({ categories, setCategories }) {
               <p id="delete-category-desc" className="menu-confirm-text">
                 Are you sure you want to delete <strong>"{categoryToDelete.name}"</strong>?
               </p>
-              <div className="menu-confirm-warning">
+              <div className={`menu-confirm-warning${backupMode === 'on' && categoryToDelete.dishCount > 0 ? ' is-recoverable' : ''}`}>
                 <WarningIcon />
                 <span>
-                  {categoryToDelete.dishCount > 0
-                    ? `This will also permanently delete the ${categoryToDelete.dishCount} dish${categoryToDelete.dishCount === 1 ? '' : 'es'} in this category. This can't be undone.`
-                    : "This category has no dishes. This can't be undone."}
+                  {categoryToDelete.dishCount === 0
+                    ? "This category has no dishes. This can't be undone."
+                    : backupMode === 'on'
+                      ? `The ${dishCountText(categoryToDelete.dishCount)} in this category will be moved to Trash. You can restore them for ${dishBackup.retentionDays} days. Restoring a dish also brings this category back.`
+                      : backupMode === 'off'
+                        ? `The ${dishCountText(categoryToDelete.dishCount)} in this category will be permanently deleted. This can't be undone.`
+                        : `This will also permanently delete the ${dishCountText(categoryToDelete.dishCount)} in this category. This can't be undone.`}
                 </span>
               </div>
 
@@ -1657,9 +1765,79 @@ function MenuList({ categories, setCategories }) {
         </div>
       )}
 
+      {/* Delete Selected Dishes Confirmation */}
+      {isDeleteDishesOpen && (
+        <div className="modal-overlay menu-confirm-overlay" onClick={handleCancelDeleteDishes}>
+          <div
+            className="category-modal-content"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-dishes-title"
+            aria-describedby="delete-dishes-desc"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') handleCancelDeleteDishes();
+            }}
+          >
+            <div className="category-modal-header">
+              <h3 id="delete-dishes-title" className="category-modal-title">
+                Delete {selectedDishIds.length === 1 ? 'dish' : 'dishes'}?
+              </h3>
+            </div>
+
+            <div className="menu-confirm-body">
+              <p id="delete-dishes-desc" className="menu-confirm-text">
+                {backupMode === 'unavailable'
+                  ? `Are you sure you want to delete the ${selectedDishIds.length} selected dishes?`
+                  : `Are you sure you want to delete the ${selectedDishIds.length} selected ${selectedDishIds.length === 1 ? 'dish' : 'dishes'}?`}
+              </p>
+              {backupMode !== 'unavailable' && (
+                <div className={`menu-confirm-warning${backupMode === 'on' ? ' is-recoverable' : ''}`}>
+                  <WarningIcon />
+                  <span>
+                    {backupMode === 'on'
+                      ? `The selected ${selectedDishIds.length === 1 ? 'dish' : 'dishes'} will be moved to Trash. You can restore ${selectedDishIds.length === 1 ? 'it' : 'them'} for ${dishBackup.retentionDays} days.`
+                      : `The selected ${selectedDishIds.length === 1 ? 'dish' : 'dishes'} will be permanently deleted. This can't be undone.`}
+                  </span>
+                </div>
+              )}
+
+              <div className="category-modal-footer">
+                <button
+                  type="button"
+                  className="btn-create-category menu-btn-danger"
+                  onClick={handleDeleteSelectedDishes}
+                  disabled={isDeletingDishes}
+                >
+                  {isDeletingDishes ? 'Deleting…' : 'Delete'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-cancel-category"
+                  onClick={handleCancelDeleteDishes}
+                  disabled={isDeletingDishes}
+                  autoFocus
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isTrashOpen && (
+        <TrashDialog
+          onClose={closeTrash}
+          onChanged={handleTrashChanged}
+          backupEnabled={backupMode === 'on'}
+          retentionDays={dishBackup.retentionDays}
+        />
+      )}
+
       {/* Delete All Confirmation */}
       {isDeleteAllOpen && (
-        <div className="modal-overlay" onClick={handleCancelDeleteAll}>
+        <div className="modal-overlay menu-confirm-overlay" onClick={handleCancelDeleteAll}>
           <div
             className="category-modal-content"
             role="alertdialog"
@@ -1679,13 +1857,27 @@ function MenuList({ categories, setCategories }) {
               <p id="delete-all-desc" className="menu-confirm-text">
                 Are you sure you want to delete <strong>your whole menu</strong>?
               </p>
-              <div className="menu-confirm-warning">
+              <div className={`menu-confirm-warning${backupMode === 'on' ? ' is-recoverable' : ''}`}>
                 <WarningIcon />
-                <span>
-                  This will permanently delete all {categories.length} categor{categories.length === 1 ? 'y' : 'ies'} and{' '}
-                  {categories.reduce((sum, cat) => sum + (cat.items?.length || 0), 0)} dish(es), along with their
-                  uploaded photos. This can't be undone.
-                </span>
+                {backupMode === 'unavailable' ? (
+                  <span>
+                    This will permanently delete all {categories.length} categor{categories.length === 1 ? 'y' : 'ies'} and{' '}
+                    {totalDishCount} dish(es), along with their
+                    uploaded photos. This can't be undone.
+                  </span>
+                ) : backupMode === 'on' ? (
+                  <span>
+                    All {categories.length} categor{categories.length === 1 ? 'y' : 'ies'} will be deleted and the{' '}
+                    {dishCountText(totalDishCount)} will be moved to Trash. You can restore them for{' '}
+                    {dishBackup.retentionDays} days. Restoring a dish also brings its category back.
+                  </span>
+                ) : (
+                  <span>
+                    All {categories.length} categor{categories.length === 1 ? 'y' : 'ies'} and{' '}
+                    {dishCountText(totalDishCount)} will be permanently deleted, along with their
+                    uploaded photos. This can't be undone.
+                  </span>
+                )}
               </div>
 
               <div className="category-modal-footer">

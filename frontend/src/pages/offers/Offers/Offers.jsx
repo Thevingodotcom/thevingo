@@ -147,8 +147,11 @@ function Offers({ offers, setOffers, categories = [] }) {
   const visibleFixedErrors = Object.fromEntries(
     Object.entries(errors.fixedPrices || {}).filter(([id]) => fixedPrices[id] !== undefined)
   );
-  const firstError = errors.name || errors.dates || errors.discountPercentage || errors.comboPrice
-    || errors.dishes || (errors.fixedPrices ? 'Enter a valid offer price for each selected dish.' : null);
+  // Everything still blocking Preview, in form order
+  const previewBlockers = [
+    errors.name, errors.dates, errors.discountPercentage, errors.comboPrice, errors.dishes,
+    errors.fixedPrices ? 'Enter a valid offer price for each selected dish.' : null
+  ].filter(Boolean);
 
   const resetForm = () => {
     const today = todayInOfferTimezone();
@@ -424,8 +427,14 @@ function Offers({ offers, setOffers, categories = [] }) {
         </div>
       )}
 
+      <p className="offer-required-note landing_body">
+        Fields marked <span className="offer-required-mark">*</span> are required.
+      </p>
+
       <div className="form-group">
-        <label className="form-label landing_body" htmlFor="offer-name">Offer Name</label>
+        <label className="form-label landing_body is-required" htmlFor="offer-name">
+          Offer Name
+        </label>
         <input
           id="offer-name"
           type="text"
@@ -434,7 +443,9 @@ function Offers({ offers, setOffers, categories = [] }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           onBlur={() => touch('name')}
+          maxLength={255}
           required
+          aria-invalid={visibleError('name') ? true : undefined}
         />
         {visibleError('name') && <span className="offer-field-error" role="alert">{visibleError('name')}</span>}
       </div>
@@ -462,7 +473,9 @@ function Offers({ offers, setOffers, categories = [] }) {
       </div>
 
       <div className="form-group">
-        <label className="form-label landing_body" htmlFor="offer-start-date">Duration</label>
+        <label className="form-label landing_body is-required" htmlFor="offer-start-date">
+          Duration
+        </label>
         <div className="offer-duration-row">
           <input
             id="offer-start-date"
@@ -472,6 +485,7 @@ function Offers({ offers, setOffers, categories = [] }) {
             onChange={(e) => { setStartDate(e.target.value); touch('dates'); }}
             aria-label="Start date"
             required
+            aria-required="true"
           />
           <span className="offer-duration-separator landing_body">to</span>
           <input
@@ -482,6 +496,7 @@ function Offers({ offers, setOffers, categories = [] }) {
             onChange={(e) => { setEndDate(e.target.value); touch('dates'); }}
             aria-label="End date"
             required
+            aria-required="true"
           />
         </div>
         {visibleError('dates') && <span className="offer-field-error" role="alert">{visibleError('dates')}</span>}
@@ -505,11 +520,14 @@ function Offers({ offers, setOffers, categories = [] }) {
           <div className="form-group">
             {discountMode === 'percentage' ? (
               <>
-                <label className="form-label landing_body" htmlFor="offer-discount-pct">Discount (%)</label>
+                <label className="form-label landing_body is-required" htmlFor="offer-discount-pct">
+                  Discount (%)
+                </label>
                 <input
                   id="offer-discount-pct"
                   type="text"
                   inputMode="decimal"
+                  required
                   className={`form-input landing_placeholder ${visibleError('discountPercentage') ? 'has-error' : ''}`}
                   placeholder="e.g. 15"
                   value={discountPercentage}
@@ -526,11 +544,14 @@ function Offers({ offers, setOffers, categories = [] }) {
         </div>
       ) : (
         <div className="form-group">
-          <label className="form-label landing_body" htmlFor="offer-combo-price">Combo price (Rs)</label>
+          <label className="form-label landing_body is-required" htmlFor="offer-combo-price">
+            Combo price (Rs)
+          </label>
           <input
             id="offer-combo-price"
             type="text"
             inputMode="decimal"
+            required
             className={`form-input landing_placeholder ${visibleError('comboPrice') ? 'has-error' : ''}`}
             placeholder="e.g. 499"
             value={comboPrice}
@@ -576,7 +597,7 @@ function Offers({ offers, setOffers, categories = [] }) {
       </div>
 
       <div className="form-group">
-        <span className="form-label landing_body">
+        <span className="form-label landing_body is-required">
           {offerType === 'combo' ? 'Dishes in this combo' : 'Dishes on offer'}
         </span>
         <OfferDishPicker
@@ -592,13 +613,24 @@ function Offers({ offers, setOffers, categories = [] }) {
         {visibleError('dishes') && <span className="offer-field-error" role="alert">{visibleError('dishes')}</span>}
       </div>
 
-      {!valid && firstError && (
-        <p className="offer-preview-blocker landing_body">{firstError}</p>
+      {!valid && previewBlockers.length > 0 && (
+        <div className="offer-preview-blocker landing_body" id="offer-preview-blockers">
+          <p>To preview this offer, complete the required fields:</p>
+          <ul>
+            {previewBlockers.map(text => <li key={text}>{text}</li>)}
+          </ul>
+        </div>
       )}
 
       <div className="modal-footer">
         <button type="button" className="btn btn-secondary landing_button" onClick={closeModal}>Cancel</button>
-        <button type="submit" className="btn btn-primary landing_button" disabled={!valid}>
+        <button
+          type="submit"
+          className="btn btn-primary landing_button"
+          disabled={!valid}
+          aria-describedby={valid ? undefined : 'offer-preview-blockers'}
+          title={valid ? undefined : 'Complete the required fields first'}
+        >
           Preview
         </button>
       </div>

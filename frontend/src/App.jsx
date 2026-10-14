@@ -218,6 +218,29 @@ const DashboardLayout = ({ currentUser, handleLogout, isSidebarCollapsed, setIsS
   );
 };
 
+// Kitchen menu route: Settings -> "Open Trash" navigates here with
+// `state: { openTrash: true }`. The request is cleared (replace) once MenuList
+// has handled it, so Back/refresh doesn't reopen Trash.
+function KitchenMenuRoute({ categories, setCategories, onMenuRefresh }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const openTrashRequested = Boolean(location.state && location.state.openTrash);
+
+  const handleTrashRequestHandled = useCallback(() => {
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+  }, [navigate, location.pathname, location.search]);
+
+  return (
+    <MenuList
+      categories={categories}
+      setCategories={setCategories}
+      onMenuRefresh={onMenuRefresh}
+      openTrashRequested={openTrashRequested}
+      onTrashRequestHandled={handleTrashRequestHandled}
+    />
+  );
+}
+
 // Component to automatically scroll to the top of the page on route changes
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -328,6 +351,16 @@ function App() {
     if (Date.now() - lastDataFetchAtRef.current < DASHBOARD_REFRESH_MIN_INTERVAL) return;
     loadDashboardData({ silent: true });
   }, [loadDashboardData]);
+
+  // After restoring dishes from Trash: reload categories so restored dishes
+  // (and revived categories) appear without a page refresh.
+  const refreshMenuData = useCallback(() => {
+    loadDashboardData({ silent: true });
+  }, [loadDashboardData]);
+
+  const openDishTrash = useCallback(() => {
+    navigate('/dashboard/kitchen-menu', { state: { openTrash: true } });
+  }, [navigate]);
 
   // Shared Settings state
   const [restaurantName, setRestaurantName] = useState('thevingo.com');
@@ -546,10 +579,10 @@ function App() {
         }
       >
         <Route index element={<Dashboard categories={categories} offers={offers} scanCount={scanCount} isDataLoading={isDataLoading} onRefresh={refreshDashboardData} />} />
-        <Route path="kitchen-menu" element={<MenuList categories={categories} setCategories={setCategories} />} />
+        <Route path="kitchen-menu" element={<KitchenMenuRoute categories={categories} setCategories={setCategories} onMenuRefresh={refreshMenuData} />} />
         <Route path="offers" element={<Offers offers={offers} setOffers={setOffers} categories={categories} />} />
         <Route path="distribution" element={<Distribution restaurantName={restaurantName} setRestaurantName={setRestaurantName} tagline={tagline} setTagline={setTagline} currentUser={currentUser} />} />
-        <Route path="settings" element={<Settings categories={categories} currentUser={currentUser} setCurrentUser={setCurrentUser} restaurantName={restaurantName} setRestaurantName={setRestaurantName} tagline={tagline} setTagline={setTagline} hotelAddress={hotelAddress} setHotelAddress={setHotelAddress} hotelCity={hotelCity} setHotelCity={setHotelCity} hotelState={hotelState} setHotelState={setHotelState} />} />
+        <Route path="settings" element={<Settings categories={categories} onOpenTrash={openDishTrash} currentUser={currentUser} setCurrentUser={setCurrentUser} restaurantName={restaurantName} setRestaurantName={setRestaurantName} tagline={tagline} setTagline={setTagline} hotelAddress={hotelAddress} setHotelAddress={setHotelAddress} hotelCity={hotelCity} setHotelCity={setHotelCity} hotelState={hotelState} setHotelState={setHotelState} />} />
       </Route>
 
       {/* Fallback redirect */}

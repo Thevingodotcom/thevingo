@@ -1473,6 +1473,13 @@
   }
 }
 
+/* Delete confirmations must sit above that FAB (and the mobile tab bar), or
+   the selection-mode Cancel/Delete buttons float over the dialog. */
+.modal-overlay.menu-confirm-overlay {
+  z-index: 1100;
+  padding: 0 16px;
+}
+
 .app-container[data-theme="dark"] .dish-form-error-banner {
   background-color: rgba(239, 68, 68, 0.12) !important;
   border-color: #7f1d1d !important;

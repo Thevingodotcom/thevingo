@@ -574,6 +574,44 @@
   font-size: var(--caption-size);
 }
 
+.offer-preview-blocker p {
+  margin: 0 0 2px;
+}
+
+.offer-preview-blocker ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.offer-required-note {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: var(--caption-size);
+}
+
+.offer-required-mark,
+.offer-modal-content .form-label.is-required::after {
+  color: #dc2626;
+  font-weight: var(--weight-semibold);
+}
+
+/* Drawn by CSS so the label text (and accessible name) stays clean; the field's
+   required attribute tells screen readers it is required. */
+.offer-modal-content .form-label.is-required::after {
+  content: ' *';
+  content: ' *' / '';
+}
+
+/* Make a blocked Preview / Publish look unavailable, not just ignore clicks */
+.offer-modal-content .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.offer-modal-content .btn-primary:disabled:hover {
+  background-color: var(--primary);
+}
+
 /* ---------- Confirmation dialog (category-modal look) ---------- */
 .offer-confirm-body {
   padding: 24px 28px;
@@ -699,7 +737,9 @@
   border-color: #f87171;
 }
 
-.app-container[data-theme="dark"] .offer-field-error {
+.app-container[data-theme="dark"] .offer-field-error,
+.app-container[data-theme="dark"] .offer-required-mark,
+.app-container[data-theme="dark"] .offer-modal-content .form-label.is-required::after {
   color: #f87171;
 }
 

@@ -93,6 +93,41 @@ describe('Offers create flow', () => {
     latestOffers = null;
   });
 
+  it('requires an offer name: Preview stays disabled and lists what is missing', () => {
+    render(<Harness />);
+    openCreate();
+
+    const nameInput = screen.getByLabelText('Offer Name');
+    expect(nameInput).toBeRequired();
+    expect(screen.getByText(/are required/i)).toBeInTheDocument();
+    expect(previewBtn()).toBeDisabled();
+    expect(previewBtn()).toHaveAttribute('aria-describedby', 'offer-preview-blockers');
+    const blockers = () => document.getElementById('offer-preview-blockers');
+    expect(blockers()).toHaveTextContent('Enter an offer name.');
+    expect(blockers()).toHaveTextContent('Enter the discount percentage.');
+    expect(blockers()).toHaveTextContent('Select at least 1 dish.');
+
+    // Everything else filled in: still blocked by the name alone
+    fireEvent.change(screen.getByLabelText('Discount (%)'), { target: { value: '10' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Chicken 65' }));
+    expect(previewBtn()).toBeDisabled();
+    expect(blockers()).toHaveTextContent('Enter an offer name.');
+    expect(blockers()).not.toHaveTextContent('Select at least 1 dish.');
+
+    // A name of only spaces does not count
+    fireEvent.change(nameInput, { target: { value: '   ' } });
+    expect(previewBtn()).toBeDisabled();
+
+    // Leaving the empty field shows the error on the field itself
+    fireEvent.blur(nameInput);
+    expect(nameInput).toHaveAttribute('aria-invalid', 'true');
+
+    fireEvent.change(nameInput, { target: { value: 'Weekend Deal' } });
+    expect(previewBtn()).toBeEnabled();
+    expect(previewBtn()).not.toHaveAttribute('aria-describedby');
+    expect(blockers()).toBeNull();
+  });
+
   it('creates a percentage discount: search + select dishes -> preview -> confirm -> POST', async () => {
     const fetchMock = mockFetchOk({
       id: '30', name: 'Diwali Deal', badgeType: 'discount', isActive: true, checked: false,

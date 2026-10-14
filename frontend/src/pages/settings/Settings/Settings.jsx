@@ -8,6 +8,7 @@ import { getDisplayName } from '../../../app/userDisplay';
 import ThemeToggleSwitch from '../../../app/ThemeToggle';
 import { downloadMenu, hasExportableDishes } from '../../../utils/menuExport';
 import editIcon from '../../../assets/icons/Vector.svg';
+import DishBackupCard from './DishBackupCard';
 import './Settings.css';
 
 const MENU_DOWNLOAD_OPTIONS = [
@@ -16,7 +17,7 @@ const MENU_DOWNLOAD_OPTIONS = [
   { format: 'image', label: 'Image' }
 ];
 
-function Settings({ categories, currentUser, setCurrentUser, restaurantName, setRestaurantName, tagline, setTagline, hotelAddress, setHotelAddress, hotelCity, setHotelCity, hotelState, setHotelState }) {
+function Settings({ categories, onOpenTrash, currentUser, setCurrentUser, restaurantName, setRestaurantName, tagline, setTagline, hotelAddress, setHotelAddress, hotelCity, setHotelCity, hotelState, setHotelState }) {
   const [activeModal, setActiveModal] = useState(null); // 'brand', 'hotel', 'user', or null
   const [tempName, setTempName] = useState('');
   const [tempTagline, setTempTagline] = useState('');
@@ -275,7 +276,10 @@ function Settings({ categories, currentUser, setCurrentUser, restaurantName, set
         {downloadError && <p className="settings-photo__error" role="alert">{downloadError}</p>}
       </div>
 
-      {/* Card 5: Appearance */}
+      {/* Card 5: Dish backup (Trash for deleted dishes) */}
+      <DishBackupCard onOpenTrash={onOpenTrash} />
+
+      {/* Card 6: Appearance */}
       <div className="settings-card" style={{ marginTop: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <h3 className="settings-card-title landing_heading2" style={{ margin: 0 }}>Appearance</h3>

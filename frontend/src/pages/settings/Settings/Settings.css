@@ -74,6 +74,104 @@
   }
 }
 
+/* Dish backup card */
+
+.dish-backup-row {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.dish-backup-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dish-backup-switch input:focus-visible + .theme-switch-slider {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.dish-backup-switch:has(input:disabled) {
+  cursor: not-allowed;
+}
+
+.dish-backup-switch input:disabled + .theme-switch-slider {
+  opacity: 0.5;
+}
+
+.dish-backup-state {
+  font-size: var(--caption-size);
+  font-weight: var(--weight-semibold);
+  color: var(--text-muted);
+  min-width: 52px;
+}
+
+.dish-backup-states {
+  list-style: none;
+  margin: 12px 0 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--caption-size);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.dish-backup-states li {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.dish-backup-states li.is-active {
+  border-color: var(--border);
+  background-color: var(--bg-main);
+  color: var(--text-dark);
+}
+
+.dish-backup-card .settings-photo__hint,
+.dish-backup-card .settings-photo__error {
+  padding-left: 0;
+}
+
+.dish-backup-actions {
+  margin-top: 12px;
+}
+
+.dish-backup-retry {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dish-backup-confirm-overlay {
+  padding: 16px;
+  /* Above the mobile bottom tab bar (z-index 1000) */
+  z-index: 1100;
+}
+
+.dish-backup-confirm-text {
+  margin: 0;
+  font-size: var(--body-small-size);
+  line-height: 1.6;
+  color: #374151;
+}
+
+.btn.dish-backup-confirm-danger {
+  background-color: #dc2626;
+}
+
+.btn.dish-backup-confirm-danger:hover {
+  background-color: #b91c1c;
+}
+
 /* Dark theme (dashboard-scoped, see index.css DARK THEME section) */
 .app-container[data-theme="dark"] .settings-photo__btn--danger:hover:not(:disabled) {
   background-color: rgba(239, 68, 68, 0.15);
@@ -81,4 +179,22 @@
 
 .app-container[data-theme="dark"] .settings-photo__error {
   color: #f87171;
+}
+
+.app-container[data-theme="dark"] .dish-backup-switch .theme-switch-slider {
+  background-color: #3a3b42;
+  border-color: #4b4c54;
+}
+
+.app-container[data-theme="dark"] .dish-backup-switch input:checked + .theme-switch-slider {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.app-container[data-theme="dark"] .dish-backup-states li.is-active {
+  background-color: #26272d;
+}
+
+.app-container[data-theme="dark"] .dish-backup-confirm-text {
+  color: #c7c9d1;
 }

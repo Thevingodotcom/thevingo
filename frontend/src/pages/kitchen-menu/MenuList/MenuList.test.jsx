@@ -13,6 +13,16 @@ vi.mock('../../../utils/menuImportExcel', async (importOriginal) => ({
 }));
 // jsdom has no URL.createObjectURL; record downloads instead.
 vi.mock('../../../utils/download', () => ({ downloadBlob: vi.fn() }));
+// Dish backup status is covered in MenuListTrash.test.jsx; here it is
+// "unavailable" (today's behaviour) so no extra fetch call is made.
+const dishBackupStub = vi.hoisted(() => ({
+  status: 'ready', available: false, enabled: false, retentionDays: 30, trashCount: 0, error: '',
+  reload: () => {}, save: async () => {}, setTrashCount: () => {}
+}));
+vi.mock('../../../app/useDishBackup', () => ({
+  useDishBackup: () => dishBackupStub,
+  default: () => dishBackupStub
+}));
 
 // Mock global fetch
 const mockFetch = vi.fn();
