@@ -15,6 +15,8 @@
 
 export const MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024; // 2 MB
 export const MAX_IMPORT_ROWS = 1000;
+/** dishes.price is DECIMAL(10,2) on the server. */
+export const MAX_IMPORT_PRICE = 99999999.99;
 
 /**
  * Columns understood by the importer. `label` is what the template header
@@ -208,6 +210,7 @@ export function parsePrice(raw) {
   if (value === 0) return { error: 'Price must be greater than 0' };
   const decimals = (cleaned.split('.')[1] || '').length;
   if (decimals > 2) return { error: `Price ${quoteValue(original)} has more than 2 decimal places` };
+  if (value > MAX_IMPORT_PRICE) return { error: `Price ${quoteValue(original)} is too large (max 99,999,999.99)` };
   return { value };
 }
 
@@ -244,12 +247,25 @@ const emptyResult = (fileErrors, warnings = []) => ({
   warnings,
   dishes: [],
   newCategories: [],
+  priceChanges: [],
+  unchangedCount: 0,
   dataRowCount: 0,
   headers: []
 });
 
+/** Price in whole paise, so 180, "180.00" and 180.004 compare as equal. */
+const toPaise = (value) => Math.round(Number(value) * 100);
+
 /**
- * Parses and validates the full import file.
+ * Parses and validates the full import file and compares it with the current
+ * menu. A row is matched to an existing dish by category name + dish name
+ * (case-insensitive, extra spaces ignored):
+ *  - no match            -> `dishes` (new dish; its category may be new too)
+ *  - match, other price  -> `priceChanges` (only the price is ever updated;
+ *                           veg type, availability and description of an
+ *                           existing dish are ignored)
+ *  - match, same price   -> counted in `unchangedCount`
+ * A dish listed twice in the file is imported from its first row only.
  *
  * @param {string} text  file contents
  * @param {{ existingCategories?: Array<{id, name, items?}> }} options
@@ -260,6 +276,8 @@ const emptyResult = (fileErrors, warnings = []) => ({
  *   warnings: Array<{row,column,message,severity}>,
  *   dishes: Array<{row,categoryName,categoryId,name,price,isVeg,availableBreakfast,availableLunch,availableDinner,description}>,
  *   newCategories: string[],
+ *   priceChanges: Array<{row,dishId,name,categoryName,categoryId,oldPrice,newPrice}>, // oldPrice is null when the current price isn't a number
+ *   unchangedCount: number,      // rows matching an existing dish with the same price
  *   dataRowCount: number,
  *   headers: string[]
  * }}
@@ -395,10 +413,6 @@ export function validateMenuImport(text, { existingCategories = [] } = {}) {
       return;
     }
 
-    if (!availability.breakfast && !availability.lunch && !availability.dinner) {
-      warnings.push(issue(row, null, `${quoteValue(name)} is not available for breakfast, lunch or dinner, so customers won't see it until you change that`, 'warning'));
-    }
-
     valid.push({
       row,
       categoryName,
@@ -412,21 +426,25 @@ export function validateMenuImport(text, { existingCategories = [] } = {}) {
     });
   });
 
-  // ---- Duplicates -----------------------------------------------------
+  // ---- Duplicates and comparison with the current menu -----------------
   const existingByName = new Map();
   (existingCategories || []).forEach(category => {
     const key = lower(collapse(category?.name));
     if (!key || existingByName.has(key)) return;
-    existingByName.set(key, {
-      category,
-      dishNames: new Set((category.items || []).map(item => lower(collapse(item?.name))))
+    const dishByName = new Map();
+    (category.items || []).forEach(item => {
+      const itemKey = lower(collapse(item?.name));
+      if (itemKey && !dishByName.has(itemKey)) dishByName.set(itemKey, item);
     });
+    existingByName.set(key, { category, dishByName });
   });
 
   const firstRowByKey = new Map();
   const dishes = [];
   const newCategories = [];
   const newCategoryKeys = new Set();
+  const priceChanges = [];
+  let unchangedCount = 0;
 
   valid.forEach(dish => {
     const key = dishKey(dish.categoryName, dish.name);
@@ -438,9 +456,28 @@ export function validateMenuImport(text, { existingCategories = [] } = {}) {
 
     const catKey = lower(dish.categoryName);
     const existing = existingByName.get(catKey);
-    if (existing && existing.dishNames.has(lower(dish.name))) {
-      warnings.push(issue(dish.row, 'Dish Name', `${quoteValue(dish.name)} is already on your menu in ${quoteValue(existing.category.name)} — this row will be skipped`, 'warning'));
+    const existingDish = existing?.dishByName.get(lower(dish.name));
+    if (existingDish) {
+      const oldPrice = Number(existingDish.price);
+      const hasOldPrice = existingDish.price !== '' && existingDish.price != null && Number.isFinite(oldPrice);
+      if (hasOldPrice && toPaise(oldPrice) === toPaise(dish.price)) {
+        unchangedCount++;
+      } else {
+        priceChanges.push({
+          row: dish.row,
+          dishId: existingDish.id,
+          name: collapse(existingDish.name),
+          categoryName: existing.category.name,
+          categoryId: existing.category.id,
+          oldPrice: hasOldPrice ? oldPrice : null,
+          newPrice: dish.price
+        });
+      }
       return;
+    }
+
+    if (!dish.availableBreakfast && !dish.availableLunch && !dish.availableDinner) {
+      warnings.push(issue(dish.row, null, `${quoteValue(dish.name)} is not available for breakfast, lunch or dinner, so customers won't see it until you change that`, 'warning'));
     }
 
     if (!existing && !newCategoryKeys.has(catKey)) {
@@ -461,6 +498,8 @@ export function validateMenuImport(text, { existingCategories = [] } = {}) {
     warnings,
     dishes: errors.length ? [] : dishes,
     newCategories: errors.length ? [] : newCategories,
+    priceChanges: errors.length ? [] : priceChanges,
+    unchangedCount: errors.length ? 0 : unchangedCount,
     dataRowCount: dataRecords.length,
     headers
   };

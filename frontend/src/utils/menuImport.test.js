@@ -63,6 +63,12 @@ describe('parsePrice', () => {
     expect(parsePrice('  ').error).toBe('Price is missing');
     expect(parsePrice('10.555').error).toMatch(/2 decimal places/);
   });
+
+  it('rejects prices above the server limit of 99,999,999.99', () => {
+    expect(parsePrice('99999999.99').value).toBe(99999999.99);
+    expect(parsePrice('123456789').error).toBe("Price '123456789' is too large (max 99,999,999.99)");
+    expect(parsePrice('100000000.00').error).toMatch(/too large/);
+  });
 });
 
 describe('checkImportFile', () => {
@@ -160,8 +166,15 @@ describe('validateMenuImport', () => {
     expect(messages(result.errors)).toEqual(["Row 2: Price 'abc' is not a number"]);
   });
 
-  it('skips duplicates within the file and dishes already on the menu, with warnings', () => {
-    const existing = [{ id: '7', name: 'Starters', items: [{ id: '1', name: 'Tomato Soup' }] }];
+  it('reports a too-large price as a row error', () => {
+    const result = validateMenuImport(csv('Starters,Soup,120,veg,1,1,1', 'Starters,Gold Plate,123456789,veg,1,1,1'));
+    expect(result.ok).toBe(false);
+    expect(messages(result.errors)).toEqual(["Row 3: Price '123456789' is too large (max 99,999,999.99)"]);
+    expect(result.dishes).toEqual([]);
+  });
+
+  it('skips duplicates within the file and leaves unchanged dishes out of the import', () => {
+    const existing = [{ id: '7', name: 'Starters', items: [{ id: '1', name: 'Tomato Soup', price: 120 }] }];
     const result = validateMenuImport(csv(
       'starters,tomato soup,120,veg,1,1,1',
       'Starters,Paneer Tikka,200,veg,1,1,1',
@@ -172,8 +185,9 @@ describe('validateMenuImport', () => {
     expect(result.dishes.map(d => d.name)).toEqual(['Paneer Tikka', 'Lime Soda']);
     expect(result.dishes[0]).toMatchObject({ categoryId: '7', categoryName: 'Starters' });
     expect(result.newCategories).toEqual(['Drinks']);
+    expect(result.priceChanges).toEqual([]);
+    expect(result.unchangedCount).toBe(1);
     expect(messages(result.warnings)).toEqual([
-      "Row 2: 'tomato soup' is already on your menu in 'Starters' — this row will be skipped",
       "Row 4: 'Paneer Tikka' in 'Starters' is listed again (first on row 3) — this row will be skipped"
     ]);
   });
@@ -181,6 +195,112 @@ describe('validateMenuImport', () => {
   it('rejects binary (renamed Excel) content', () => {
     const result = validateMenuImport('PK\u0003\u0004\u0000\u0000binary');
     expect(result.fileErrors[0].code).toBe('binary-file');
+  });
+});
+
+describe('validateMenuImport: comparison with the current menu', () => {
+  const existing = [
+    {
+      id: '7',
+      name: 'Main Course',
+      items: [
+        { id: '101', name: 'Paneer Butter Masala', price: 160 },
+        { id: '102', name: 'Dal Makhani', price: '140.00' },
+        { id: '103', name: 'Veg Pulao', price: 1100 }
+      ]
+    },
+    { id: '8', name: 'Starters', items: [{ id: '201', name: 'Chicken 65', price: 220 }] }
+  ];
+
+  it('lists price changes with old and new price, using the existing dish for display', () => {
+    const result = validateMenuImport(csv(
+      'main course,  paneer butter   masala ,₹180,veg,1,1,1',
+      'Main Course,Veg Pulao,"Rs. 1,200",veg,1,1,1',
+      'STARTERS,chicken 65,199.5,non_veg,0,1,1'
+    ), { existingCategories: existing });
+    expect(result.ok).toBe(true);
+    expect(result.priceChanges).toEqual([
+      { row: 2, dishId: '101', name: 'Paneer Butter Masala', categoryName: 'Main Course', categoryId: '7', oldPrice: 160, newPrice: 180 },
+      { row: 3, dishId: '103', name: 'Veg Pulao', categoryName: 'Main Course', categoryId: '7', oldPrice: 1100, newPrice: 1200 },
+      { row: 4, dishId: '201', name: 'Chicken 65', categoryName: 'Starters', categoryId: '8', oldPrice: 220, newPrice: 199.5 }
+    ]);
+    expect(result.dishes).toEqual([]);
+    expect(result.newCategories).toEqual([]);
+    expect(result.unchangedCount).toBe(0);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('counts dishes with the same price (compared to 2 decimals) as unchanged, without warnings', () => {
+    const result = validateMenuImport(csv(
+      'Main Course,Paneer Butter Masala,160.00,veg,1,1,1',
+      'Main Course,Dal Makhani,140,veg,1,1,1',
+      'Main Course,Veg Pulao,"1,100",veg,0,0,0'
+    ), { existingCategories: existing });
+    expect(result.ok).toBe(true);
+    expect(result.priceChanges).toEqual([]);
+    expect(result.dishes).toEqual([]);
+    expect(result.unchangedCount).toBe(3);
+    // Availability etc. of existing dishes is ignored, so no "not available" warning either.
+    expect(result.warnings).toEqual([]);
+  });
+
+  it('treats a dish that exists in a different category as new for this category', () => {
+    const result = validateMenuImport(csv('Starters,Paneer Butter Masala,180,veg,1,1,1'), { existingCategories: existing });
+    expect(result.priceChanges).toEqual([]);
+    expect(result.dishes).toHaveLength(1);
+    expect(result.dishes[0]).toMatchObject({ name: 'Paneer Butter Masala', categoryId: '8', categoryName: 'Starters', price: 180 });
+  });
+
+  it('mixes price changes, new dishes and new categories', () => {
+    const result = validateMenuImport(csv(
+      'Main Course,Paneer Butter Masala,170,veg,1,1,1',
+      'Main Course,Kadai Paneer,210,veg,1,1,1',
+      'Drinks,Lime Soda,50,veg,1,1,1',
+      'Main Course,Dal Makhani,140,veg,1,1,1'
+    ), { existingCategories: existing });
+    expect(result.priceChanges.map(c => [c.name, c.oldPrice, c.newPrice])).toEqual([['Paneer Butter Masala', 160, 170]]);
+    expect(result.dishes.map(d => [d.name, d.categoryId])).toEqual([['Kadai Paneer', '7'], ['Lime Soda', null]]);
+    expect(result.newCategories).toEqual(['Drinks']);
+    expect(result.unchangedCount).toBe(1);
+  });
+
+  it('keeps the first row of a dish listed twice and warns about the rest', () => {
+    const result = validateMenuImport(csv(
+      'Main Course,Paneer Butter Masala,180,veg,1,1,1',
+      'Main Course,paneer butter masala,999,veg,1,1,1'
+    ), { existingCategories: existing });
+    expect(result.priceChanges).toHaveLength(1);
+    expect(result.priceChanges[0]).toMatchObject({ row: 2, newPrice: 180 });
+    expect(messages(result.warnings)).toEqual([
+      "Row 3: 'paneer butter masala' in 'Main Course' is listed again (first on row 2) — this row will be skipped"
+    ]);
+  });
+
+  it('treats an existing dish without a usable price as a change with no old price', () => {
+    const result = validateMenuImport(csv('Starters,Spring Roll,90,veg,1,1,1'), {
+      existingCategories: [{ id: '8', name: 'Starters', items: [{ id: '202', name: 'Spring Roll', price: null }] }]
+    });
+    expect(result.priceChanges).toEqual([
+      { row: 2, dishId: '202', name: 'Spring Roll', categoryName: 'Starters', categoryId: '8', oldPrice: null, newPrice: 90 }
+    ]);
+  });
+
+  it('returns no price changes when the file has errors', () => {
+    const result = validateMenuImport(csv(
+      'Main Course,Paneer Butter Masala,180,veg,1,1,1',
+      'Main Course,Dal Makhani,140,veg,1,1,1',
+      'Main Course,Broken,abc,veg,1,1,1'
+    ), { existingCategories: existing });
+    expect(result.ok).toBe(false);
+    expect(result.priceChanges).toEqual([]);
+    expect(result.unchangedCount).toBe(0);
+    expect(result.dishes).toEqual([]);
+  });
+
+  it('returns empty diff fields for file-level errors', () => {
+    const result = validateMenuImport('Category,Dish\nStarters,Soup', { existingCategories: existing });
+    expect(result.priceChanges).toEqual([]);
+    expect(result.unchangedCount).toBe(0);
   });
 });
 

@@ -4,13 +4,21 @@ import { API_URL, DEFAULT_DISH_IMAGE, getImageUrl } from '../../config';
 import { getPersistentDeviceId } from '../../utils/device';
 import catFilterIcon from '../../assets/icons/Catagory Filter.svg';
 import filterIcon from '../../assets/icons/filterIcon.svg';
+import { comboAnchorId, filterCombos, getComboIds, getDishOffer, normalizeCombos } from './offerDisplay';
+import { ComboChip, ComboOffersSection, DishOfferPrice } from './PublicMenuOffers';
 import './PublicMenu.css';
+
+const COMBO_HIGHLIGHT_MS = 2000;
 
 const PublicMenu = () => {
   const { userId } = useParams(); // This will receive the restaurant slug
   const [restaurantName, setRestaurantName] = useState('');
   const [tagline, setTagline] = useState('');
   const [categories, setCategories] = useState([]);
+  // Active combo offers (top-level `combos`; [] on older backends that don't send it)
+  const [combos, setCombos] = useState([]);
+  const [highlightedComboId, setHighlightedComboId] = useState(null);
+  const highlightTimerRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -55,6 +63,28 @@ const PublicMenu = () => {
     };
   }, []);
 
+  useEffect(() => () => clearTimeout(highlightTimerRef.current), []);
+
+  // "Part of a combo" chip: bring the combo card into view, focus it and flash a highlight.
+  const jumpToCombo = (comboId) => {
+    const card = document.getElementById(comboAnchorId(comboId));
+    if (card) {
+      if (typeof card.scrollIntoView === 'function') {
+        const reduceMotion = typeof window.matchMedia === 'function'
+          && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        card.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+      }
+      try {
+        card.focus({ preventScroll: true });
+      } catch {
+        // Older browsers without focus options
+      }
+    }
+    setHighlightedComboId(comboId);
+    clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = setTimeout(() => setHighlightedComboId(null), COMBO_HIGHLIGHT_MS);
+  };
+
   const fetchMenu = async (showLoadingSpinner = true, isScan = false) => {
     try {
       if (showLoadingSpinner) {
@@ -82,7 +112,8 @@ const PublicMenu = () => {
       if (response.ok) {
         setRestaurantName(data.restaurant_name);
         setTagline(data.tagline);
-        setCategories(data.categories);
+        setCategories(Array.isArray(data.categories) ? data.categories : []);
+        setCombos(normalizeCombos(data.combos));
         setError(null);
 
         // Notify other tabs in same browser if a scan was counted
@@ -97,7 +128,7 @@ const PublicMenu = () => {
               });
               scanBc.close();
             }
-          } catch (bcErr) {
+          } catch {
             // Non-fatal
           }
         }
@@ -257,6 +288,15 @@ const PublicMenu = () => {
     })
     .filter(Boolean); // Remove null categories
 
+  // Combos follow the search, dish type and category filters (see filterCombos)
+  const visibleCombos = filterCombos(combos, {
+    searchQuery,
+    dishType: appliedDishType,
+    selectedCategory,
+    categories
+  });
+  const visibleCombosById = new Map(visibleCombos.map(combo => [combo.id, combo]));
+
   return (
     <div className="public-menu-page">
       {/* Header Section */}
@@ -292,6 +332,9 @@ const PublicMenu = () => {
           </button>
         </div>
 
+        {/* Combo Offers (above the categories; hidden when there are none) */}
+        <ComboOffersSection combos={visibleCombos} highlightedId={highlightedComboId} />
+
         {/* Menu Sections */}
         <div className="public-menu-sections">
           {filteredCategories.length > 0 ? (
@@ -301,43 +344,55 @@ const PublicMenu = () => {
                 
                 <div className="public-food-grid">
                   {category.items.length > 0 ? (
-                    category.items.map(item => (
-                      <article key={item.id} className="public-food-card">
-                        <div className="public-food-card-body">
-                          <div className="public-food-img-wrapper">
-                            <img 
-                              src={getImageUrl(item.image)} 
-                              alt={item.name} 
-                              className="public-food-img" 
-                              onError={(e) => {
-                                e.currentTarget.onerror = null;
-                                e.currentTarget.src = DEFAULT_DISH_IMAGE;
-                              }}
-                            />
-                          </div>
-                          <div className="public-food-details">
-                            <h4 className="public-food-name landing_body">{item.name}</h4>
-                            <p className="public-food-price landing_body">{item.price} Rs</p>
+                    category.items.map(item => {
+                      const offer = getDishOffer(item);
+                      const itemCombos = getComboIds(item)
+                        .map(id => visibleCombosById.get(id))
+                        .filter(Boolean);
+                      return (
+                        <article key={item.id} className={`public-food-card${offer ? ' public-food-card--offer' : ''}`}>
+                          <div className="public-food-card-body">
+                            <div className="public-food-img-wrapper">
+                              <img 
+                                src={getImageUrl(item.image)} 
+                                alt={item.name} 
+                                className="public-food-img" 
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = DEFAULT_DISH_IMAGE;
+                                }}
+                              />
+                            </div>
+                            <div className="public-food-details">
+                              <h4 className="public-food-name landing_body">{item.name}</h4>
+                              {offer ? (
+                                <DishOfferPrice offer={offer} />
+                              ) : (
+                                <p className="public-food-price landing_body">{item.price} Rs</p>
+                              )}
 
-                            {item.description && (
-                              <p className="public-food-desc landing_body" style={{ fontSize: '13px', color: '#6b7280', margin: '4px 0 6px 0', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                {item.description}
-                              </p>
-                            )}
+                              {item.description && (
+                                <p className="public-food-desc landing_body" style={{ fontSize: '13px', color: '#6b7280', margin: '4px 0 6px 0', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                  {item.description}
+                                </p>
+                              )}
 
-                            <div className="public-veg-indicator">
-                              <div className={`public-veg-box ${!item.isVeg ? 'non-veg' : ''}`}>
-                                <div className={`public-veg-dot ${!item.isVeg ? 'non-veg' : ''}`}></div>
+                              <div className="public-veg-indicator">
+                                <div className={`public-veg-box ${!item.isVeg ? 'non-veg' : ''}`}>
+                                  <div className={`public-veg-dot ${!item.isVeg ? 'non-veg' : ''}`}></div>
+                                </div>
+                                <span className="public-veg-text landing_body">{item.isVeg ? 'Veg' : 'Non Veg'}</span>
                               </div>
-                              <span className="public-veg-text landing_body">{item.isVeg ? 'Veg' : 'Non Veg'}</span>
+
+                              <ComboChip combos={itemCombos} onJump={jumpToCombo} />
                             </div>
                           </div>
-                        </div>
-                        <div className="public-food-card-footer landing_body">
-                          {getAvailabilityText(item) || 'Breakfast/Lunch/Dinner'}
-                        </div>
-                      </article>
-                    ))
+                          <div className="public-food-card-footer landing_body">
+                            {getAvailabilityText(item) || 'Breakfast/Lunch/Dinner'}
+                          </div>
+                        </article>
+                      );
+                    })
                   ) : (
                     <div className="public-category-empty landing_body">
                       No matching dishes found.
@@ -346,11 +401,11 @@ const PublicMenu = () => {
                 </div>
               </section>
             ))
-          ) : (
+          ) : visibleCombos.length === 0 ? (
             <div className="public-menu-empty landing_body">
               No categories or dishes found.
             </div>
-          )}
+          ) : null}
         </div>
       </main>
 

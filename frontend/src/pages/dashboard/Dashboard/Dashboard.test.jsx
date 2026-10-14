@@ -45,6 +45,21 @@ describe('Dashboard stat cards', () => {
     expect(card('Category')).toHaveTextContent('3');
   });
 
+  it('counts only offers whose effectiveStatus is active when the server provides it', () => {
+    renderDashboard({
+      offers: [
+        { id: '1', status: 'Active', isActive: true, effectiveStatus: 'active' },
+        { id: '2', status: 'Active', isActive: true, effectiveStatus: 'scheduled' },
+        { id: '3', status: 'Active', isActive: true, effectiveStatus: 'expired' },
+        { id: '4', status: 'Active', isActive: true, effectiveStatus: 'unscheduled' },
+        { id: '5', status: 'Inactive', isActive: false, effectiveStatus: 'inactive' },
+        { id: '6', status: 'Active', isActive: true, effectiveStatus: 'active' },
+        { id: '7', status: 'Active', isActive: true } // no effectiveStatus: falls back to the toggle
+      ]
+    });
+    expect(card('Active offer')).toHaveTextContent('3');
+  });
+
   it('shows a loading placeholder while data loads', () => {
     renderDashboard({ isDataLoading: true });
     expect(card('Dish')).toHaveTextContent('...');

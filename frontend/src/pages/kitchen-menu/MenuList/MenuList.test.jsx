@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import ExcelJS from 'exceljs';
 import MenuList from './MenuList';
@@ -257,6 +257,8 @@ describe('MenuList Dish Details and Edit Functionality', () => {
     const HEADER = 'Category,Dish Name,Price,Veg Type (veg/non_veg),Breakfast (1/0),Lunch (1/0),Dinner (1/0)';
     const csvFile = (lines, name = 'menu.csv') => new File([[HEADER, ...lines].join('\r\n')], name, { type: 'text/csv' });
     const okDish = (id, name) => ({ ok: true, status: 201, json: async () => ({ success: true, dish: { id, name, price: 100, isVeg: true } }) });
+    const okCategory = (id, name) => ({ ok: true, status: 201, json: async () => ({ success: true, category: { id, name, items: [] } }) });
+    const okPrices = (dishes) => ({ ok: true, status: 200, json: async () => ({ success: true, updated: dishes.length, message: 'Prices updated', dishes }) });
 
     const openAndPick = (file, categories = mockCategories, setCategories = vi.fn()) => {
       render(<MenuList categories={categories} setCategories={setCategories} />);
@@ -264,6 +266,36 @@ describe('MenuList Dish Details and Edit Functionality', () => {
       fireEvent.change(screen.getByTestId('menu-import-input'), { target: { files: [file] } });
       return setCategories;
     };
+    // The review screen always comes first; nothing is sent until Apply is clicked.
+    const approve = async (options) => {
+      const button = await screen.findByRole('button', { name: /^Apply \d+ changes?$/ }, options);
+      fireEvent.click(button);
+    };
+    const stateful = (initial) => {
+      const ref = { state: initial };
+      ref.setCategories = vi.fn(updater => { ref.state = typeof updater === 'function' ? updater(ref.state) : updater; });
+      return ref;
+    };
+
+    // Menu used by the review / price-change tests.
+    const richMenu = [
+      {
+        id: '1',
+        name: 'Biriyani',
+        items: [
+          { id: '101', name: 'Hyderabadi Chicken Biriyani', price: 280, isVeg: false },
+          { id: '102', name: 'Veg Biriyani', price: 200, isVeg: true }
+        ]
+      },
+      { id: '2', name: 'Starters', items: [{ id: '201', name: 'Paneer Tikka', price: 180, isVeg: true }] }
+    ];
+    const mixedFile = () => csvFile([
+      'biriyani,  hyderabadi chicken   biriyani,₹300,non_veg,0,1,1',
+      'Starters,Paneer Tikka,165,veg,1,1,1',
+      'Biriyani,Veg Biriyani,200,veg,0,1,1',
+      'Biriyani,Egg Biriyani,150,non_veg,0,1,1',
+      'Drinks,Lime Soda,50,veg,1,1,1'
+    ]);
 
     it('shows a blocking loading screen with progress while importing', async () => {
       let resolveFirst;
@@ -272,17 +304,19 @@ describe('MenuList Dish Details and Edit Functionality', () => {
         .mockResolvedValueOnce(okDish('302', 'Veg Biriyani'));
 
       openAndPick(csvFile(['Biriyani,Mutton Biriyani,320,non_veg,0,1,1', 'Biriyani,Veg Biriyani,200,veg,0,1,1']));
+      await approve();
 
       expect(await screen.findByText('0 of 2 dishes')).toBeInTheDocument();
-      expect(screen.getByText('Importing menu…')).toBeInTheDocument();
+      expect(screen.getByText('Applying changes…')).toBeInTheDocument();
       expect(screen.getByRole('progressbar', { name: /Import progress/i })).toHaveAttribute('aria-valuemax', '2');
       expect(screen.getByText('Adding dishes').closest('li')).toHaveAttribute('aria-current', 'step');
+      expect(screen.getByText('Updating prices').closest('li')).toHaveTextContent('none needed');
       expect(screen.getByRole('button', { name: /Close import dialog/i })).toBeDisabled();
       expect(screen.queryByTestId('menu-import-input')).not.toBeInTheDocument();
 
       resolveFirst(okDish('301', 'Mutton Biriyani'));
-      expect(await screen.findByText('Imported 2 of 2 dishes')).toBeInTheDocument();
-      expect(screen.getByText('Menu imported')).toBeInTheDocument();
+      expect(await screen.findByText('Added 2 dishes')).toBeInTheDocument();
+      expect(screen.getByText('Menu updated')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Close import dialog/i })).not.toBeDisabled();
       expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toMatchObject({ name: 'Mutton Biriyani', price: 320, categoryId: '1', isVeg: false, availableBreakfast: false });
@@ -332,6 +366,7 @@ describe('MenuList Dish Details and Edit Functionality', () => {
       expect(dialog).toHaveTextContent('Download the template (Excel or CSV).');
       expect(dialog).toHaveTextContent(/pick Veg Type and availability from the dropdowns/);
       expect(dialog).toHaveTextContent(/the file type is detected automatically/);
+      expect(dialog).toHaveTextContent(/only the price is updated/);
       expect(dialog).not.toHaveTextContent(/save .* as .*\.csv/i);
       expect(screen.getByText('Choose File')).toBeInTheDocument();
       expect(screen.getByText(/\.csv or \.xlsx up to 2 MB/)).toBeInTheDocument();
@@ -446,8 +481,9 @@ describe('MenuList Dish Details and Edit Functionality', () => {
       ]);
 
       openAndPick(file);
+      await approve({ timeout: 5000 });
 
-      expect(await screen.findByText('Imported 2 of 2 dishes', {}, { timeout: 5000 })).toBeInTheDocument();
+      expect(await screen.findByText('Added 2 dishes')).toBeInTheDocument();
       expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toMatchObject({
         name: 'Mutton Biriyani', price: 320, categoryId: '1', isVeg: false,
@@ -462,8 +498,9 @@ describe('MenuList Dish Details and Edit Functionality', () => {
     it('imports a CSV file that has no extension', async () => {
       mockFetch.mockResolvedValueOnce(okDish('301', 'Mutton Biriyani'));
       openAndPick(new File([[HEADER, 'Biriyani,Mutton Biriyani,320,non_veg,0,1,1'].join('\r\n')], 'menu'));
+      await approve();
 
-      expect(await screen.findByText('Imported 1 of 1 dish')).toBeInTheDocument();
+      expect(await screen.findByText('Added 1 dish')).toBeInTheDocument();
       expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toMatchObject({ name: 'Mutton Biriyani', price: 320 });
     });
 
@@ -484,22 +521,22 @@ describe('MenuList Dish Details and Edit Functionality', () => {
         .mockResolvedValueOnce(okDish('301', 'Mutton Biriyani'))
         .mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ success: false, message: 'Name, price, and category are required.' }) })
         .mockResolvedValueOnce(okDish('303', 'Prawn Biriyani'));
-      let state = [...mockCategories];
-      const setCategories = vi.fn(updater => { state = typeof updater === 'function' ? updater(state) : updater; });
+      const menu = stateful([...mockCategories]);
 
       openAndPick(csvFile([
         'Biriyani,Mutton Biriyani,320,non_veg,0,1,1',
         'Biriyani,Veg Biriyani,200,veg,0,1,1',
         'Biriyani,Prawn Biriyani,350,non_veg,0,1,1'
-      ]), mockCategories, setCategories);
+      ]), mockCategories, menu.setCategories);
+      await approve();
 
-      expect(await screen.findByText('Imported 2 of 3 dishes')).toBeInTheDocument();
+      expect(await screen.findByText('Added 2 of 3 dishes')).toBeInTheDocument();
       expect(screen.getByText('Import finished with problems')).toBeInTheDocument();
       const failed = screen.getByRole('list', { name: /Rows that failed/i });
       expect(failed).toHaveTextContent('Row 3Veg Biriyani (Biriyani): Name, price, and category are required.');
       expect(screen.getByRole('button', { name: /Download rows not imported/i })).toBeInTheDocument();
       expect(mockFetch).toHaveBeenCalledTimes(3);
-      expect(state[0].items.map(item => item.name)).toEqual(['Hyderabadi Chicken Biriyani', 'Mutton Biriyani', 'Prawn Biriyani']);
+      expect(menu.state[0].items.map(item => item.name)).toEqual(['Hyderabadi Chicken Biriyani', 'Mutton Biriyani', 'Prawn Biriyani']);
     });
 
     it('stops and reports clearly when the connection is lost', async () => {
@@ -512,17 +549,18 @@ describe('MenuList Dish Details and Edit Functionality', () => {
         'Biriyani,Veg Biriyani,200,veg,0,1,1',
         'Biriyani,Prawn Biriyani,350,non_veg,0,1,1'
       ]));
+      await approve();
 
-      expect(await screen.findByText('Imported 1 of 3 dishes')).toBeInTheDocument();
+      expect(await screen.findByText('Added 1 of 3 dishes')).toBeInTheDocument();
       expect(screen.getByText('Import stopped')).toBeInTheDocument();
       expect(screen.getByText(/Connection lost/)).toBeInTheDocument();
       expect(screen.getByText(/2 dishes were not sent/)).toBeInTheDocument();
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
-    it('creates missing categories first and skips dishes already on the menu', async () => {
+    it('creates missing categories first and does not resend dishes whose price is unchanged', async () => {
       mockFetch
-        .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ success: true, category: { id: '9', name: 'Drinks', items: [] } }) })
+        .mockResolvedValueOnce(okCategory('9', 'Drinks'))
         .mockResolvedValueOnce(okDish('401', 'Lime Soda'));
 
       openAndPick(csvFile([
@@ -530,11 +568,160 @@ describe('MenuList Dish Details and Edit Functionality', () => {
         'Drinks,Lime Soda,50,veg,1,1,1'
       ]));
 
-      expect(await screen.findByText('Imported 1 of 1 dish')).toBeInTheDocument();
+      expect(await screen.findByTestId('menu-import-count-unchanged')).toHaveTextContent('Unchanged dishes1');
+      await approve();
+
+      expect(await screen.findByText('Added 1 dish (1 new category)')).toBeInTheDocument();
       expect(screen.getByText(/1 new category created: Drinks/)).toBeInTheDocument();
-      expect(screen.getByRole('list', { name: /Skipped rows/i })).toHaveTextContent(/already on your menu in 'Biriyani'/);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
       expect(mockFetch.mock.calls[0][0]).toMatch(/\/api\/menu\/categories$/);
       expect(JSON.parse(mockFetch.mock.calls[1][1].body)).toMatchObject({ name: 'Lime Soda', categoryId: '9' });
+    });
+
+    describe('review before applying', () => {
+      it('shows counts, old and new prices and new dishes, and sends nothing before approval', async () => {
+        openAndPick(mixedFile(), richMenu);
+
+        expect(await screen.findByText('Review changes')).toBeInTheDocument();
+        expect(screen.getByText('4 changes to apply')).toBeInTheDocument();
+        expect(screen.getByTestId('menu-import-count-prices')).toHaveTextContent('Price changes2');
+        expect(screen.getByTestId('menu-import-count-dishes')).toHaveTextContent('New dishes2');
+        expect(screen.getByTestId('menu-import-count-categories')).toHaveTextContent('New categories1');
+        expect(screen.getByTestId('menu-import-count-unchanged')).toHaveTextContent('Unchanged dishes1');
+
+        const prices = screen.getByRole('table', { name: /Price changes/i });
+        const [, chickenRow, paneerRow] = within(prices).getAllByRole('row');
+        expect(chickenRow).toHaveTextContent('Hyderabadi Chicken Biriyani');
+        expect(chickenRow).toHaveTextContent('Biriyani');
+        expect(chickenRow).toHaveTextContent('280 Rs300 Rs▲ +20 Rs');
+        expect(paneerRow).toHaveTextContent('Paneer Tikka');
+        expect(paneerRow).toHaveTextContent('180 Rs165 Rs▼ −15 Rs');
+
+        const fresh = screen.getByRole('table', { name: /New dishes/i });
+        const [, eggRow, sodaRow] = within(fresh).getAllByRole('row');
+        expect(eggRow).toHaveTextContent('Egg Biriyani');
+        expect(eggRow).toHaveTextContent('150 Rs');
+        expect(eggRow).not.toHaveTextContent('New category');
+        expect(sodaRow).toHaveTextContent('Lime Soda');
+        expect(sodaRow).toHaveTextContent('DrinksNew category');
+
+        expect(screen.getByText(/Only prices are updated for dishes already on your menu/)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Apply 4 changes' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
+        expect(screen.getByRole('button', { name: /Close import dialog/i })).not.toBeDisabled();
+        expect(mockFetch).not.toHaveBeenCalled();
+      });
+
+      it('Cancel goes back to choosing a file without sending anything', async () => {
+        const setCategories = openAndPick(mixedFile(), richMenu);
+        fireEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
+
+        expect(screen.getByText('Choose File')).toBeInTheDocument();
+        expect(screen.queryByText('Review changes')).not.toBeInTheDocument();
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(setCategories).not.toHaveBeenCalled();
+      });
+
+      it('Apply updates prices in one PATCH, then creates categories and dishes, and updates the menu', async () => {
+        mockFetch
+          .mockResolvedValueOnce(okPrices([{ id: '101', price: 300 }, { id: '201', price: 165 }]))
+          .mockResolvedValueOnce(okCategory('9', 'Drinks'))
+          .mockResolvedValueOnce(okDish('103', 'Egg Biriyani'))
+          .mockResolvedValueOnce(okDish('401', 'Lime Soda'));
+        const menu = stateful(richMenu);
+
+        openAndPick(mixedFile(), richMenu, menu.setCategories);
+        await approve();
+
+        expect(await screen.findByText('Updated 2 prices · Added 2 dishes (1 new category)')).toBeInTheDocument();
+        expect(screen.getByText('Menu updated')).toBeInTheDocument();
+
+        expect(mockFetch).toHaveBeenCalledTimes(4);
+        const [url, init] = mockFetch.mock.calls[0];
+        expect(url).toMatch(/\/api\/menu\/dishes\/prices$/);
+        expect(init.method).toBe('PATCH');
+        expect(init.headers).toMatchObject({ 'Content-Type': 'application/json', Authorization: expect.stringMatching(/^Bearer /) });
+        expect(JSON.parse(init.body)).toEqual({ updates: [{ id: '101', price: 300 }, { id: '201', price: 165 }] });
+        expect(mockFetch.mock.calls[1][0]).toMatch(/\/api\/menu\/categories$/);
+        expect(mockFetch.mock.calls.slice(2).map(([, req]) => JSON.parse(req.body).name)).toEqual(['Egg Biriyani', 'Lime Soda']);
+        expect(mockFetch.mock.calls.filter(([, req]) => req.method === 'PATCH')).toHaveLength(1);
+
+        const [biriyani, starters, drinks] = menu.state;
+        expect(biriyani.items.map(item => [item.name, item.price])).toEqual([
+          ['Hyderabadi Chicken Biriyani', 300], ['Veg Biriyani', 200], ['Egg Biriyani', 100]
+        ]);
+        expect(starters.items[0]).toMatchObject({ id: '201', price: 165 });
+        expect(drinks).toMatchObject({ id: '9', name: 'Drinks' });
+        expect(drinks.items.map(item => item.name)).toEqual(['Lime Soda']);
+      });
+
+      it('shows the "Updating prices" step and updates only prices when there are no new dishes', async () => {
+        let resolvePrices;
+        mockFetch.mockImplementationOnce(() => new Promise(resolve => { resolvePrices = resolve; }));
+        const menu = stateful(richMenu);
+
+        openAndPick(csvFile(['Starters,Paneer Tikka,190,veg,1,1,1']), richMenu, menu.setCategories);
+        await approve();
+
+        const step = await screen.findByText('Updating prices');
+        expect(step.closest('li')).toHaveAttribute('aria-current', 'step');
+        expect(step.closest('li')).toHaveTextContent('1 price');
+
+        resolvePrices(okPrices([{ id: '201', price: 190 }]));
+        expect(await screen.findByText('Updated 1 price')).toBeInTheDocument();
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        expect(menu.state[1].items[0].price).toBe(190);
+      });
+
+      it('stops everything when the price update fails, and says nothing was changed', async () => {
+        const message = 'Some dishes were not found on your menu. Nothing was changed.';
+        mockFetch.mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({ success: false, message, missingIds: ['201'] }) });
+        const setCategories = vi.fn();
+
+        openAndPick(mixedFile(), richMenu, setCategories);
+        await approve();
+
+        expect(await screen.findByText("Prices couldn't be updated — nothing was changed")).toBeInTheDocument();
+        expect(screen.getByText(message)).toBeInTheDocument();
+        expect(screen.getByText(/None of the 2 prices were updated and no categories or dishes were added/)).toBeInTheDocument();
+        expect(mockFetch).toHaveBeenCalledTimes(1);
+        expect(setCategories).not.toHaveBeenCalled();
+
+        // Retrying sends the same approved changes again.
+        mockFetch
+          .mockResolvedValueOnce(okPrices([{ id: '101', price: 300 }, { id: '201', price: 165 }]))
+          .mockResolvedValueOnce(okCategory('9', 'Drinks'))
+          .mockResolvedValueOnce(okDish('103', 'Egg Biriyani'))
+          .mockResolvedValueOnce(okDish('401', 'Lime Soda'));
+        fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+        expect(await screen.findByText('Updated 2 prices · Added 2 dishes (1 new category)')).toBeInTheDocument();
+        expect(mockFetch).toHaveBeenCalledTimes(5);
+      });
+
+      it('says the menu is already up to date when nothing changed, without an Apply button', async () => {
+        openAndPick(csvFile([
+          'Biriyani,Hyderabadi Chicken Biriyani,280.00,non_veg,0,1,1',
+          'Starters,paneer tikka,180,veg,1,1,1'
+        ]), richMenu);
+
+        expect(await screen.findByText('Your menu is already up to date — no changes found in this file.')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /^Apply/ })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Done' })).toHaveFocus();
+        expect(screen.getByText('Choose another file')).toBeInTheDocument();
+        expect(mockFetch).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      });
+
+      it('catches a price above the server limit before the review screen', async () => {
+        openAndPick(csvFile(['Biriyani,Gold Biriyani,123456789,veg,0,1,1']));
+
+        expect(await screen.findByText('Found 1 problem in 1 row')).toBeInTheDocument();
+        expect(screen.getByRole('list', { name: /Problems found in the file/i })).toHaveTextContent("Price '123456789' is too large (max 99,999,999.99)");
+        expect(screen.queryByText('Review changes')).not.toBeInTheDocument();
+        expect(mockFetch).not.toHaveBeenCalled();
+      });
     });
   });
 

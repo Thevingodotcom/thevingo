@@ -2799,6 +2799,13 @@ body {
   background-color: #1e1e1e;
 }
 
+/* Keep the orange "on" fill: the rule above outranks .offer-row-checkbox:checked */
+.app-container[data-theme="dark"] .offer-row-checkbox:checked,
+.app-container[data-theme="dark"] .offer-row-checkbox:indeterminate {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
 .app-container[data-theme="dark"] .offer-toggle-slider {
   background-color: #3a3b42;
   border-color: #4b4c54;

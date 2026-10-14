@@ -547,7 +547,7 @@ function App() {
       >
         <Route index element={<Dashboard categories={categories} offers={offers} scanCount={scanCount} isDataLoading={isDataLoading} onRefresh={refreshDashboardData} />} />
         <Route path="kitchen-menu" element={<MenuList categories={categories} setCategories={setCategories} />} />
-        <Route path="offers" element={<Offers offers={offers} setOffers={setOffers} />} />
+        <Route path="offers" element={<Offers offers={offers} setOffers={setOffers} categories={categories} />} />
         <Route path="distribution" element={<Distribution restaurantName={restaurantName} setRestaurantName={setRestaurantName} tagline={tagline} setTagline={setTagline} currentUser={currentUser} />} />
         <Route path="settings" element={<Settings categories={categories} currentUser={currentUser} setCurrentUser={setCurrentUser} restaurantName={restaurantName} setRestaurantName={setRestaurantName} tagline={tagline} setTagline={setTagline} hotelAddress={hotelAddress} setHotelAddress={setHotelAddress} hotelCity={hotelCity} setHotelCity={setHotelCity} hotelState={hotelState} setHotelState={setHotelState} />} />
       </Route>

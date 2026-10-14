@@ -41,9 +41,13 @@ const ChevronIcon = () => (
 );
 
 
-// GET /api/offers returns { isActive: boolean, status: 'Active' | 'Inactive' }
-const isOfferActive = (offer) =>
-  offer?.isActive === true || String(offer?.status || '').toLowerCase() === 'active';
+// GET /api/offers returns { isActive: boolean, status: 'Active' | 'Inactive', effectiveStatus }.
+// effectiveStatus also accounts for the offer's dates (scheduled / expired), so prefer it;
+// fall back to the on/off toggle for responses that don't include it.
+const isOfferActive = (offer) => {
+  if (offer?.effectiveStatus) return offer.effectiveStatus === 'active';
+  return offer?.isActive === true || String(offer?.status || '').toLowerCase() === 'active';
+};
 
 function Dashboard({ categories, offers, scanCount, isDataLoading, onRefresh }) {
   const navigate = useNavigate();
