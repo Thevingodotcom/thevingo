@@ -102,7 +102,7 @@ const ProductPage = () => {
         {/* CTA */}
         <section className="product-cta">
           <h2 className="product-cta__title landing_heading2">Ready to Get Started?</h2>
-          <Link to="/login" className="product-cta__btn landing_button">Start Your Free Journey Today</Link>
+          <Link to="/register" className="product-cta__btn landing_button">Start Your Free Journey Today</Link>
         </section>
       </main>
 

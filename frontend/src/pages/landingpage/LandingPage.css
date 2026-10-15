@@ -97,6 +97,21 @@
   background: #fff5f3;
 }
 
+.landing-hero__login-hint {
+  margin: 16px 0 0;
+  color: #7c7c7c;
+}
+
+.landing-hero__login-link {
+  color: #EF5C43;
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.landing-hero__login-link:hover {
+  text-decoration: underline;
+}
+
 /* Hero Visual */
 /* Hero Visual */
 

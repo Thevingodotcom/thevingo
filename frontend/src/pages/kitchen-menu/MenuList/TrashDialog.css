@@ -1,0 +1,670 @@
+/* ==========================================================================
+   Trash dialog (Kitchen menu) — deleted dishes kept by "Dish backup"
+   ========================================================================== */
+
+.trash-overlay {
+  padding: 16px;
+  /* Above the mobile bottom tab bar (1000) and the kitchen-menu FAB (1001) */
+  z-index: 1100;
+}
+
+.trash-modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 620px;
+  max-height: min(88vh, 760px);
+  background-color: #ffffff;
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  outline: none;
+  animation: slideUp 0.2s ease-out;
+}
+
+.trash-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px;
+  background-color: #eeeeee;
+}
+
+.trash-modal-heading {
+  min-width: 0;
+}
+
+.trash-modal-title {
+  margin: 0;
+  font-size: var(--section-title-size);
+  font-weight: var(--weight-bold);
+  color: #000000;
+  letter-spacing: -0.5px;
+}
+
+.trash-modal-subtitle {
+  margin: 4px 0 0 0;
+  font-size: var(--caption-size);
+  line-height: 1.5;
+  color: #4b5563;
+}
+
+.trash-close-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.trash-close-btn:hover:not(:disabled) {
+  background-color: rgba(0, 0, 0, 0.06);
+  color: var(--text-dark);
+}
+
+.trash-close-btn:focus-visible,
+.trash-btn:focus-visible,
+.trash-checkbox:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.trash-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 24px;
+}
+
+/* ---------- Notices ---------- */
+.trash-notice,
+.trash-error-banner {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: var(--caption-size);
+  line-height: 1.5;
+}
+
+.trash-notice {
+  border: 1px solid #a7f3d0;
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.trash-error-banner {
+  border: 1px solid #fca5a5;
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+/* ---------- Loading / empty / error states ---------- */
+.trash-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--label-size);
+}
+
+.trash-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+  color: #9ca3af;
+}
+
+.trash-state-title {
+  margin: 0;
+  font-size: var(--body-size);
+  font-weight: var(--weight-bold);
+  color: var(--text-dark);
+}
+
+.trash-state-text {
+  margin: 0;
+  max-width: 380px;
+  font-size: var(--caption-size);
+  line-height: 1.5;
+}
+
+.trash-state--error .trash-state-title {
+  color: #b91c1c;
+}
+
+.trash-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid #e5e7eb;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: trash-spin 0.8s linear infinite;
+}
+
+@keyframes trash-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- List ---------- */
+.trash-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.trash-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--label-size);
+  font-weight: var(--weight-semibold);
+  color: var(--text-dark);
+  cursor: pointer;
+}
+
+.trash-selected-count {
+  font-size: var(--caption-size);
+  color: var(--text-muted);
+}
+
+.trash-checkbox {
+  appearance: none;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1.5px solid #d1d5db;
+  border-radius: 4px;
+  background-color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.trash-checkbox:checked,
+.trash-checkbox:indeterminate {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.trash-checkbox:checked::after {
+  content: '✓';
+  color: #ffffff;
+  font-size: var(--badge-size);
+  font-weight: var(--weight-black);
+  line-height: 1;
+}
+
+.trash-checkbox:indeterminate::after {
+  content: '';
+  width: 8px;
+  height: 2px;
+  background-color: #ffffff;
+  border-radius: 1px;
+}
+
+.trash-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.trash-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trash-row {
+  border-bottom: 1px solid var(--border);
+}
+
+.trash-row:last-child {
+  border-bottom: none;
+}
+
+.trash-row-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px 12px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.trash-row-label:hover {
+  background-color: #f9fafb;
+}
+
+.trash-row.is-selected .trash-row-label {
+  background-color: var(--primary-light);
+}
+
+.trash-row-img {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  background-color: #f3f4f6;
+}
+
+.trash-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.trash-row-name-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.trash-row-name-line .veg-box {
+  flex-shrink: 0;
+}
+
+.trash-row-name {
+  font-size: var(--label-size);
+  font-weight: var(--weight-semibold);
+  color: var(--text-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trash-row-category {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: var(--caption-size);
+  color: var(--text-muted);
+}
+
+.trash-row-hint {
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid #fde68a;
+  background-color: #fffbeb;
+  color: #b45309;
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+}
+
+.trash-row-timing {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.trash-row-timing-part {
+  white-space: nowrap;
+}
+
+.trash-row-price {
+  flex-shrink: 0;
+  font-size: var(--label-size);
+  font-weight: var(--weight-semibold);
+  color: var(--text-dark);
+  white-space: nowrap;
+}
+
+/* ---------- Footer actions ---------- */
+.trash-modal-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--border);
+  background-color: #ffffff;
+}
+
+.trash-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  font-family: inherit;
+  font-size: var(--label-size);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.trash-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.trash-btn--primary {
+  background-color: var(--primary);
+  color: #ffffff;
+}
+
+.trash-btn--primary:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.trash-btn--secondary {
+  background-color: transparent;
+  border-color: #4b5563;
+  color: #374151;
+}
+
+.trash-btn--secondary:hover:not(:disabled) {
+  background-color: #f9fafb;
+}
+
+.trash-btn--danger-outline {
+  background-color: transparent;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.trash-btn--danger-outline:hover:not(:disabled) {
+  background-color: #fef2f2;
+}
+
+.trash-btn--link-danger {
+  margin-left: auto;
+  padding: 0 8px;
+  background: transparent;
+  color: #dc2626;
+}
+
+.trash-btn--link-danger:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+/* Confirmation stacks above the Trash dialog */
+.trash-confirm-overlay {
+  z-index: 1110;
+}
+
+/* ---------- Kitchen menu entry points ---------- */
+.menu-trash-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  background-color: var(--bg-white);
+  color: var(--text-dark);
+  font-family: inherit;
+  font-size: var(--label-size);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.menu-trash-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.menu-trash-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background-color: #f3f4f6;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  line-height: 20px;
+  text-align: center;
+}
+
+.menu-empty-trash-link {
+  margin-top: 12px;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: var(--primary);
+  font-family: inherit;
+  font-size: var(--label-size);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.menu-empty-trash-link:hover {
+  text-decoration: underline;
+}
+
+/* The FAB menu is 120px wide; "Trash (12)" fits, keep it on one line */
+.fab-option-item.fab-option-trash {
+  white-space: nowrap;
+}
+
+/* Delete confirmation: Trash (recoverable) variant of the warning box */
+.menu-confirm-warning.is-recoverable {
+  border-color: #fde68a;
+  background-color: #fffbeb;
+  color: #92400e;
+}
+
+@media (max-width: 768px) {
+  /* On mobile the FAB menu is the Trash entry; keep the toolbar compact. */
+  .menu-trash-btn {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .trash-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .trash-modal {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .trash-modal-header {
+    padding: 16px;
+  }
+
+  .trash-modal-body {
+    padding: 12px 16px;
+  }
+
+  .trash-toolbar {
+    padding-left: 8px;
+  }
+
+  .trash-row-label {
+    gap: 10px;
+    padding: 10px 2px 10px 8px;
+    align-items: flex-start;
+  }
+
+  .trash-row-label .trash-checkbox {
+    margin-top: 16px;
+  }
+
+  .trash-row-img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .trash-modal-footer {
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    gap: 8px;
+  }
+
+  .trash-modal-footer .trash-btn--primary,
+  .trash-modal-footer .trash-btn--danger-outline {
+    flex: 1 1 0;
+    padding: 0 10px;
+  }
+
+  .trash-btn--link-danger {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trash-modal {
+    animation: none;
+  }
+
+  .trash-spinner {
+    animation-duration: 2s;
+  }
+}
+
+/* ==========================================================================
+   Dark theme (dashboard-scoped, see index.css DARK THEME section)
+   ========================================================================== */
+.app-container[data-theme="dark"] .trash-modal,
+.app-container[data-theme="dark"] .trash-modal-footer {
+  background-color: #1b1c21;
+}
+
+.app-container[data-theme="dark"] .trash-modal-header {
+  background-color: #222329;
+}
+
+.app-container[data-theme="dark"] .trash-modal-title {
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .trash-modal-subtitle {
+  color: #a1a1aa;
+}
+
+.app-container[data-theme="dark"] .trash-close-btn:hover:not(:disabled) {
+  background-color: #2b2c33;
+}
+
+.app-container[data-theme="dark"] .trash-notice {
+  border-color: rgba(52, 211, 153, 0.35);
+  background-color: rgba(5, 150, 105, 0.15);
+  color: #6ee7b7;
+}
+
+.app-container[data-theme="dark"] .trash-error-banner {
+  border-color: #7f1d1d;
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+
+.app-container[data-theme="dark"] .trash-state-icon {
+  background-color: #26272d;
+  color: #74757e;
+}
+
+.app-container[data-theme="dark"] .trash-state--error .trash-state-title {
+  color: #f87171;
+}
+
+.app-container[data-theme="dark"] .trash-spinner {
+  border-color: #33343a;
+  border-top-color: var(--primary);
+}
+
+.app-container[data-theme="dark"] .trash-checkbox {
+  border-color: #4b4c54;
+  background-color: #1e1e1e;
+}
+
+.app-container[data-theme="dark"] .trash-checkbox:checked,
+.app-container[data-theme="dark"] .trash-checkbox:indeterminate {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.app-container[data-theme="dark"] .trash-row-label:hover {
+  background-color: #23242a;
+}
+
+.app-container[data-theme="dark"] .trash-row.is-selected .trash-row-label {
+  background-color: var(--primary-light);
+}
+
+.app-container[data-theme="dark"] .trash-row-img {
+  background-color: #26272d;
+}
+
+.app-container[data-theme="dark"] .trash-row-hint {
+  border-color: rgba(251, 191, 36, 0.35);
+  background-color: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+}
+
+.app-container[data-theme="dark"] .trash-row-timing {
+  color: #8a8b93;
+}
+
+.app-container[data-theme="dark"] .trash-btn--secondary {
+  border-color: #5a5b63;
+  color: #d4d5dc;
+}
+
+.app-container[data-theme="dark"] .trash-btn--secondary:hover:not(:disabled) {
+  background-color: #2a2b31;
+}
+
+.app-container[data-theme="dark"] .trash-btn--danger-outline {
+  border-color: #7f1d1d;
+  color: #f87171;
+}
+
+.app-container[data-theme="dark"] .trash-btn--danger-outline:hover:not(:disabled),
+.app-container[data-theme="dark"] .trash-btn--link-danger:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.12);
+}
+
+.app-container[data-theme="dark"] .trash-btn--link-danger {
+  color: #f87171;
+}
+
+.app-container[data-theme="dark"] .menu-trash-btn {
+  border-color: #3a3b42;
+}
+
+.app-container[data-theme="dark"] .menu-trash-count {
+  background-color: #2a2b31;
+  color: #c7c9d1;
+}
+
+.app-container[data-theme="dark"] .menu-confirm-warning.is-recoverable {
+  border-color: rgba(251, 191, 36, 0.35);
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #fcd34d;
+}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_URL } from '../../../config';
 import logoIcon from '../../../assets/icons/Frame 123.svg';
@@ -9,14 +9,17 @@ const ForgotPassword = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const submittingRef = useRef(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (!email) {
       setError('Please enter your email address.');
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     setError('');
 
@@ -29,13 +32,15 @@ const ForgotPassword = () => {
 
       const data = await response.json();
       if (response.ok) {
+        // Navigate straight away; the OTP screen starts its resend countdown on entry.
         navigate('/verify-otp', { state: { email, type: 'reset' } });
-      } else {
-        setError(data.message || 'Failed to send OTP. Please check your email and try again.');
+        return;
       }
-    } catch (err) {
+      setError(data.message || 'Failed to send OTP. Please check your email and try again.');
+    } catch {
       setError('Something went wrong. Please try again later.');
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };

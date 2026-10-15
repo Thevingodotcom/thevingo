@@ -469,3 +469,283 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== Offers on the public menu (discount badges, combo offers) =====
+   The public menu is light-only, so these use literal colors rather than theme tokens. */
+
+.pm-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Badge: always carries text, color only reinforces it */
+.pm-offer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffffff;
+  background-color: #e11d48;
+}
+
+.pm-offer-badge-icon {
+  flex-shrink: 0;
+}
+
+.pm-offer-badge--discount {
+  background-color: #e11d48;
+}
+
+.pm-offer-badge--weekend {
+  background-color: #dc2626;
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.pm-offer-badge-prefix::after {
+  content: '\00B7';
+  margin-left: 4px;
+}
+
+.pm-offer-badge--combo {
+  background-color: #2b4cff;
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.pm-offer-badge--combo-veg {
+  background-color: #1e3a8a;
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+/* Dish card with an active discount */
+.public-food-card--offer {
+  border-color: #fecdd3;
+}
+
+.public-food-card--offer .public-food-details {
+  min-width: 0;
+}
+
+.pm-dish-offer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pm-offer-tagline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.pm-offer-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #be123c;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pm-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin: 0;
+}
+
+.pm-price-now {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.pm-price-was {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  white-space: nowrap;
+}
+
+.pm-save {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: #ecfdf5;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* "Part of a combo" chip */
+.pm-combo-chip {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  min-height: 28px;
+  padding: 3px 10px;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  background-color: #eef2ff;
+  color: #1e3a8a;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.pm-combo-chip:hover {
+  background-color: #e0e7ff;
+  border-color: #a5b4fc;
+}
+
+.pm-combo-chip:focus-visible {
+  outline: 2px solid #2b4cff;
+  outline-offset: 2px;
+}
+
+/* Combo offers section */
+.pm-combo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 16px;
+}
+
+.pm-combo-card {
+  scroll-margin: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(180deg, #f5f7ff 0%, #ffffff 60%);
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+
+.pm-combo-card:focus {
+  outline: none;
+}
+
+.pm-combo-card:focus-visible,
+.pm-combo-card.is-highlighted {
+  border-color: #2b4cff;
+  box-shadow: 0 0 0 3px rgba(43, 76, 255, 0.3);
+}
+
+.pm-combo-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pm-combo-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.pm-combo-title {
+  margin: 0;
+  font-size: var(--body-small-size);
+  font-weight: var(--weight-bold);
+  color: #0f172a;
+  line-height: 1.3;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pm-combo-dishes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pm-combo-dish {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.3;
+}
+
+.pm-veg-box {
+  flex-shrink: 0;
+}
+
+.pm-combo-dish-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pm-combo-pricing {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.pm-combo-price {
+  font-size: 20px;
+}
+
+.pm-combo-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  background-color: #eef2ff;
+  padding: 6px 14px;
+  font-size: var(--badge-size);
+  font-weight: var(--weight-medium);
+  color: #1e3a8a;
+  border-top: 1px solid #e0e7ff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pm-combo-card,
+  .pm-combo-chip {
+    transition: none;
+  }
+}

@@ -1,4 +1,7 @@
-import { API_URL } from '../../../config';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { haptics } from '../../../utils/haptics';
+import './Dashboard.css';
 
 // Custom inline SVG icons for dashboard circles
 const PercentBadgeIcon = () => (
@@ -37,81 +40,68 @@ const ChevronIcon = () => (
   </svg>
 );
 
-function Dashboard({ categories, offers, scanCount, isDataLoading }) {
+
+// GET /api/offers returns { isActive: boolean, status: 'Active' | 'Inactive', effectiveStatus }.
+// effectiveStatus also accounts for the offer's dates (scheduled / expired), so prefer it;
+// fall back to the on/off toggle for responses that don't include it.
+const isOfferActive = (offer) => {
+  if (offer?.effectiveStatus) return offer.effectiveStatus === 'active';
+  return offer?.isActive === true || String(offer?.status || '').toLowerCase() === 'active';
+};
+
+function Dashboard({ categories, offers, scanCount, isDataLoading, onRefresh }) {
+  const navigate = useNavigate();
+
+  // Re-sync counts with the server whenever the dashboard is opened (App throttles this)
+  useEffect(() => {
+    if (onRefresh) onRefresh();
+  }, [onRefresh]);
+
   // Compute stats synchronously from memory - completely eliminates loading delays when switching tabs
-  const activeOffers = offers ? offers.filter(o => o.isActive || o.status === 'active').length : 0;
-  const categoryCount = categories ? categories.length : 0;
-  const dishCount = categories ? categories.reduce((total, cat) => total + (cat.items?.length || 0), 0) : 0;
+  const activeOffers = Array.isArray(offers) ? offers.filter(isOfferActive).length : 0;
+  const categoryCount = Array.isArray(categories) ? categories.length : 0;
+  const dishCount = Array.isArray(categories)
+    ? categories.reduce((total, cat) => total + (Array.isArray(cat?.items) ? cat.items.length : 0), 0)
+    : 0;
+
+  const cards = [
+    { key: 'offers', label: 'Active offer', count: activeOffers, Icon: PercentBadgeIcon, to: '/dashboard/offers', destination: 'Offers' },
+    { key: 'scans', label: 'Total Scan', count: scanCount ?? 0, Icon: QRBadgeIcon, to: '/dashboard/distribution', destination: 'Distribution' },
+    { key: 'dishes', label: 'Dish', count: dishCount, Icon: DishBadgeIcon, to: '/dashboard/kitchen-menu', destination: 'Kitchen menu' },
+    { key: 'categories', label: 'Category', count: categoryCount, Icon: CategoryBadgeIcon, to: '/dashboard/kitchen-menu', destination: 'Kitchen menu' }
+  ];
 
   return (
     <div className="dashboard-page-container">
       <h2 className="landing_heading2" style={{ color: 'var(--text-dark)', margin: '0 0 24px 0' }}>Dashboard</h2>
 
-      {/* Stats Cards Grid Layout */}
+      {/* Stats Cards Grid Layout - each card opens the page that manages it */}
       <div className="dash-stats-grid">
-        {/* Card 1: Active Offer */}
-        <div className="dash-stat-card">
-          <div className="dash-card-left">
-            <div className="dash-card-icon-badge">
-              <PercentBadgeIcon />
-            </div>
-            <div className="dash-card-text">
-              <span className="dash-card-count landing_body2">{isDataLoading ? '...' : activeOffers}</span>
-              <span className="dash-card-label landing_body">Active offer</span>
-            </div>
-          </div>
-          <div className="dash-card-right">
-            <ChevronIcon />
-          </div>
-        </div>
-
-        {/* Card 2: Total Scan */}
-        <div className="dash-stat-card">
-          <div className="dash-card-left">
-            <div className="dash-card-icon-badge">
-              <QRBadgeIcon />
-            </div>
-            <div className="dash-card-text">
-              <span className="dash-card-count landing_body2">{isDataLoading ? '...' : scanCount}</span>
-              <span className="dash-card-label landing_body">Total Scan</span>
-            </div>
-          </div>
-          <div className="dash-card-right">
-            <ChevronIcon />
-          </div>
-        </div>
-
-        {/* Card 3: Dish */}
-        <div className="dash-stat-card">
-          <div className="dash-card-left">
-            <div className="dash-card-icon-badge">
-              <DishBadgeIcon />
-            </div>
-            <div className="dash-card-text">
-              <span className="dash-card-count landing_body2">{isDataLoading ? '...' : dishCount}</span>
-              <span className="dash-card-label landing_body">Dish</span>
-            </div>
-          </div>
-          <div className="dash-card-right">
-            <ChevronIcon />
-          </div>
-        </div>
-
-        {/* Card 4: Category */}
-        <div className="dash-stat-card">
-          <div className="dash-card-left">
-            <div className="dash-card-icon-badge">
-              <CategoryBadgeIcon />
-            </div>
-            <div className="dash-card-text">
-              <span className="dash-card-count landing_body2">{isDataLoading ? '...' : categoryCount}</span>
-              <span className="dash-card-label landing_body">Category</span>
-            </div>
-          </div>
-          <div className="dash-card-right">
-            <ChevronIcon />
-          </div>
-        </div>
+        {cards.map(({ key, label, count, Icon, to, destination }) => (
+          <button
+            key={key}
+            type="button"
+            className="dash-stat-card dash-stat-card--link"
+            onClick={() => {
+              haptics.selection();
+              navigate(to);
+            }}
+            aria-label={`${label}: ${isDataLoading ? 'loading' : count}. Open ${destination}`}
+          >
+            <span className="dash-card-left">
+              <span className="dash-card-icon-badge">
+                <Icon />
+              </span>
+              <span className="dash-card-text">
+                <span className="dash-card-count landing_body2">{isDataLoading ? '...' : count}</span>
+                <span className="dash-card-label landing_body">{label}</span>
+              </span>
+            </span>
+            <span className="dash-card-right" aria-hidden="true">
+              <ChevronIcon />
+            </span>
+          </button>
+        ))}
       </div>
     </div>
   );

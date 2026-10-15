@@ -1,61 +1,74 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { API_URL } from '../config';
+import authStorage from './authStorage';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
-
-  const [token, setToken] = useState(() => localStorage.getItem('token') || null);
+  const [currentUser, setCurrentUser] = useState(() => authStorage.getUser());
+  const [token, setToken] = useState(() => authStorage.getToken());
   const [isInitializing, setIsInitializing] = useState(true);
   const [isFadingOut, setIsFadingOut] = useState(false);
+  // Where ProtectedRoute should send the user once their session is gone.
+  // null => '/login' (expired/invalid session); set by an explicit logout (e.g. '/').
+  const [postLogoutPath, setPostLogoutPath] = useState(null);
 
-  // Clear all session storage & local state
-  const logout = useCallback(async () => {
-    try {
-      const savedToken = localStorage.getItem('token');
-      if (savedToken) {
+  /**
+   * Clear all session storage & local state.
+   * Local state is cleared synchronously (before the server call) so that a caller
+   * navigating in the same tick never renders protected routes with a dead session.
+   * @param {{ redirectTo?: string }} [options] redirectTo: where ProtectedRoute should send
+   *   the user if a protected page renders after this logout (defaults to '/login').
+   */
+  const logout = useCallback(async (options = {}) => {
+    const savedToken = authStorage.getToken();
+    authStorage.clear();
+    setPostLogoutPath(options.redirectTo || null);
+    setToken(null);
+    setCurrentUser(null);
+
+    if (savedToken) {
+      try {
         await fetch(`${API_URL}/api/auth/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${savedToken}`
           }
-        }).catch(() => {});
+        });
+      } catch {
+        // Server-side logout is best-effort; the session is already cleared locally
       }
-    } catch (e) {
-      console.error('Logout error:', e);
-    } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setToken(null);
-      setCurrentUser(null);
     }
   }, []);
 
   // Update user & token on login/register
   const login = useCallback((userData, tokenData) => {
+    setPostLogoutPath(null);
     if (tokenData) {
-      localStorage.setItem('token', tokenData);
+      authStorage.setToken(tokenData);
       setToken(tokenData);
     }
     if (userData) {
-      localStorage.setItem('user', JSON.stringify(userData));
+      authStorage.setUser(userData);
       setCurrentUser(userData);
     }
   }, []);
 
+  // Merge fields (e.g. a new avatar returned by the API) into the cached user & persist them
+  const updateUser = useCallback((patch) => {
+    if (!patch) return;
+    setCurrentUser((prev) => {
+      const next = { ...(prev || authStorage.getUser() || {}), ...patch };
+      authStorage.setUser(next);
+      return next;
+    });
+  }, []);
+
   // Session validation helper
   const validateSession = useCallback(async () => {
-    const savedToken = localStorage.getItem('token');
+    const savedToken = authStorage.getToken();
     if (!savedToken) {
-      localStorage.removeItem('user');
+      authStorage.clear();
       setToken(null);
       setCurrentUser(null);
       return false;
@@ -63,10 +76,10 @@ export const AuthProvider = ({ children }) => {
 
     // Check offline status
     if (!navigator.onLine) {
-      const savedUser = localStorage.getItem('user');
+      const savedUser = authStorage.getUser();
       if (savedUser) {
         try {
-          setCurrentUser(JSON.parse(savedUser));
+          setCurrentUser(savedUser);
           setToken(savedToken);
           return true;
         } catch {
@@ -81,16 +94,15 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (res.ok) {
-        const savedUser = localStorage.getItem('user');
+        const savedUser = authStorage.getUser();
         if (savedUser) {
-          setCurrentUser(JSON.parse(savedUser));
+          setCurrentUser(savedUser);
         }
         setToken(savedToken);
         return true;
       } else if (res.status === 401 || res.status === 403) {
         // Token expired or invalid
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        authStorage.clear();
         setToken(null);
         setCurrentUser(null);
         return false;
@@ -113,6 +125,8 @@ export const AuthProvider = ({ children }) => {
     setIsFadingOut,
     login,
     logout,
+    updateUser,
+    postLogoutPath,
     validateSession
   };
 

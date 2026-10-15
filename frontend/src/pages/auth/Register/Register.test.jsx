@@ -52,5 +52,18 @@ describe('Register Component', () => {
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
+
+    // OTP step: resend is locked behind the countdown right after the OTP was sent
+    expect(await screen.findByRole('button', { name: /Resend OTP in \d:\d\d/i })).toBeDisabled();
+  });
+
+  it('links back to login for existing users', () => {
+    render(
+      <BrowserRouter>
+        <Register onRegister={() => {}} />
+      </BrowserRouter>
+    );
+
+    expect(screen.getByRole('link', { name: /^Log in$/i })).toHaveAttribute('href', '/login');
   });
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { API_URL } from '../../../config';
 import logoIcon from '../../../assets/icons/Frame 123.svg';
@@ -11,21 +11,24 @@ const ResetPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  // Message handed over by the OTP screen (e.g. "OTP verified...")
+  const [success, setSuccess] = useState(location.state?.message || '');
+  const submittingRef = useRef(false);
 
   const email = location.state?.email;
   const otp = location.state?.otp;
 
   useEffect(() => {
     if (!email || !otp) {
-      navigate('/login');
+      navigate('/forgot-password', { replace: true });
     }
   }, [email, otp, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (!password || !confirmPassword) {
       setError('Please fill in both fields.');
       return;
@@ -35,8 +38,10 @@ const ResetPassword = () => {
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
       const response = await fetch(`${API_URL}/api/auth/reset-password`, {
@@ -47,16 +52,18 @@ const ResetPassword = () => {
 
       const data = await response.json();
       if (response.ok) {
-        setSuccess('Password reset successfully!');
-        setTimeout(() => {
-          navigate('/login');
-        }, 1500);
-      } else {
-        setError(data.message || 'Failed to reset password.');
+        // Go straight to login; the success message is shown there.
+        navigate('/login', {
+          replace: true,
+          state: { message: 'Password reset successfully. Please log in with your new password.' }
+        });
+        return;
       }
-    } catch (err) {
+      setError(data.message || 'Failed to reset password.');
+    } catch {
       setError('Something went wrong. Please try again later.');
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -83,7 +90,7 @@ const ResetPassword = () => {
         {/* Right Column (Form) */}
         <form className="register-card__right" onSubmit={handleSubmit}>
           {error && <div className="register-error-msg landing_body">{error}</div>}
-          {success && <div className="register-error-msg landing_body" style={{ color: '#16a34a' }}>{success}</div>}
+          {!error && success && <div className="register-error-msg landing_body" style={{ color: '#16a34a' }} role="status">{success}</div>}
           
           <div className="register-form-group register-password-group">
             <input

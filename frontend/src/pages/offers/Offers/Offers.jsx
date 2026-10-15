@@ -1,22 +1,41 @@
-import { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { API_URL } from '../../../config';
+import authStorage from '../../../app/authStorage';
 import addBtnIcon from '../../../assets/icons/Add.svg';
 import deleteIcon from '../../../assets/icons/delete.svg';
+import { formatOfferDuration, parseOfferDuration, normalizeBadgeType } from '../../../utils/offerDuration';
+import {
+  OFFER_STATUS_LABELS,
+  addMonths,
+  buildDishLookup,
+  buildOfferPayload,
+  buildOfferPreview,
+  computeEffectiveStatus,
+  daysBetween,
+  describeOfferPrice,
+  formatOfferDate,
+  formatPrice,
+  getOfferStatusKey,
+  todayInOfferTimezone,
+  validateOfferDraft
+} from '../../../utils/offerPricing';
+import OfferDishPicker from './OfferDishPicker';
+
+import './Offers.css';
 
 // Custom icons inline SVGs
-const TrashIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="3 6 5 6 21 6"></polyline>
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-    <line x1="10" y1="11" x2="10" y2="17"></line>
-    <line x1="14" y1="11" x2="14" y2="17"></line>
+const EditIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 20h9"></path>
+    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
   </svg>
 );
 
-const PlusIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19"></line>
-    <line x1="5" y1="12" x2="19" y2="12"></line>
+const InfoIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="12" y1="16" x2="12" y2="12"></line>
+    <line x1="12" y1="8" x2="12.01" y2="8"></line>
   </svg>
 );
 
@@ -35,9 +54,9 @@ const PercentTagBadge = () => (
   <div className="percent-tag-badge-wrapper">
     <svg width="44" height="44" viewBox="0 0 48 48" fill="none" style={{ transform: 'rotate(-5deg)' }}>
       <path d="M22 6 C18 6 12 12 18 18" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-      <path d="M15 15 L28 15 L38 25 L25 38 L15 28 Z" fill="#e11d48" stroke="var(--bg-white)" strokeWidth="1.2" />
-      <circle cx="19" cy="19" r="2.2" fill="var(--bg-white)" />
-      <text x="22" y="30" fill="var(--bg-white)" fontSize="12" fontWeight="900" fontFamily="sans-serif">%</text>
+      <path d="M15 15 L28 15 L38 25 L25 38 L15 28 Z" fill="#e11d48" stroke="#ffffff" strokeWidth="1.2" />
+      <circle cx="19" cy="19" r="2.2" fill="#ffffff" />
+      <text x="22" y="30" fill="#ffffff" fontSize="12" fontWeight="900" fontFamily="sans-serif">%</text>
     </svg>
   </div>
 );
@@ -50,35 +69,202 @@ const WeekendOfferBadge = () => (
   </div>
 );
 
-function Offers({ offers, setOffers }) {
+const OfferBadge = ({ badgeType }) => (
+  <>
+    {(badgeType === 'combo-offer' || badgeType === 'combo-biriyani' || badgeType === 'combo-veg') && <ComboOfferBadge />}
+    {(badgeType === 'discount' || badgeType === 'percent-paneer') && <PercentTagBadge />}
+    {(badgeType === 'weekend-offer' || badgeType === 'weekend-vibe') && <WeekendOfferBadge />}
+  </>
+);
+
+const TIMING_LABELS = {
+  'B/L/D': 'B/L/D (Breakfast/Lunch/Dinner)',
+  'L/D': 'L/D (Lunch/Dinner)',
+  'B/L': 'B/L (Breakfast/Lunch)'
+};
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const amountText = (value) => (value == null || !Number.isFinite(Number(value)) ? '' : String(Number(value)));
+const dishCountText = (n) => `${n} dish${n === 1 ? '' : 'es'}`;
+
+// Old offers stored the discount as free text ("15%", "150", "150 Rs")
+const legacyPercent = (text) => {
+  const m = /^\s*(\d+(?:\.\d{1,2})?)\s*%\s*$/.exec(String(text || ''));
+  return m ? m[1] : '';
+};
+const legacyAmount = (text) => {
+  const m = /^\s*(?:₹|rs\.?)?\s*(\d+(?:\.\d{1,2})?)\s*(?:₹|rs\.?)?\s*$/i.exec(String(text || ''));
+  return m ? m[1] : '';
+};
+
+const statusTitle = (offer, key) => {
+  if (key === 'scheduled' && offer.startDate) return `Starts ${formatOfferDate(offer.startDate)}`;
+  if (key === 'expired' && offer.endDate) return `Ended ${formatOfferDate(offer.endDate)}`;
+  if (key === 'unscheduled') return 'Edit this offer to choose its dates and dishes';
+  if (key === 'inactive') return 'Switched off';
+  return undefined;
+};
+
+function Offers({ offers, setOffers, categories = [] }) {
 
   // Modal open state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // 'form' -> 'preview' (-> confirm dialog -> save)
+  const [step, setStep] = useState('form');
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  // Offer being edited (null while creating a new one)
+  const [editingOffer, setEditingOffer] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  // Informational messages shown at the top of the form (legacy offer, removed dishes)
+  const [notices, setNotices] = useState([]);
+  const [touched, setTouched] = useState({});
 
-  // New offer form states
-  const getTodayDateString = () => {
-    const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
-  const getFutureDateString = (monthsAhead = 1) => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + monthsAhead);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
+  // Form fields
   const [name, setName] = useState('');
-  const [startDate, setStartDate] = useState(getTodayDateString());
-  const [endDate, setEndDate] = useState(getFutureDateString(1));
+  const [offerType, setOfferType] = useState('discount');
+  const [discountMode, setDiscountMode] = useState('percentage');
+  const [discountPercentage, setDiscountPercentage] = useState('');
+  const [comboPrice, setComboPrice] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [timing, setTiming] = useState('B/L/D');
-  const [pricePercent, setPricePercent] = useState('');
-  const [badgeType, setBadgeType] = useState('combo-biriyani');
+  const [badgeType, setBadgeType] = useState('discount');
+  const [badgeTouched, setBadgeTouched] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [fixedPrices, setFixedPrices] = useState({});
+
+  const dishLookup = useMemo(() => buildDishLookup(categories), [categories]);
+
+  const draft = {
+    name, offerType, discountMode, discountPercentage, comboPrice, startDate, endDate, selectedIds, fixedPrices
+  };
+  const { valid, errors } = validateOfferDraft(draft, dishLookup);
+  const preview = step === 'preview' && valid ? buildOfferPreview(draft, dishLookup) : null;
+  const touch = (field) => setTouched(prev => (prev[field] ? prev : { ...prev, [field]: true }));
+  const visibleError = (field) => (touched[field] ? errors[field] : null);
+  // Per-dish errors only once the owner has typed into that dish's price
+  const visibleFixedErrors = Object.fromEntries(
+    Object.entries(errors.fixedPrices || {}).filter(([id]) => fixedPrices[id] !== undefined)
+  );
+  // Everything still blocking Preview, in form order
+  const previewBlockers = [
+    errors.name, errors.dates, errors.discountPercentage, errors.comboPrice, errors.dishes,
+    errors.fixedPrices ? 'Enter a valid offer price for each selected dish.' : null
+  ].filter(Boolean);
+
+  const resetForm = () => {
+    const today = todayInOfferTimezone();
+    setName('');
+    setOfferType('discount');
+    setDiscountMode('percentage');
+    setDiscountPercentage('');
+    setComboPrice('');
+    setStartDate(today);
+    setEndDate(addMonths(today, 1));
+    setTiming('B/L/D');
+    setBadgeType('discount');
+    setBadgeTouched(false);
+    setSelectedIds([]);
+    setFixedPrices({});
+    setTouched({});
+    setNotices([]);
+    setSaveError('');
+    setStep('form');
+    setIsConfirmOpen(false);
+  };
+
+  const closeModal = () => {
+    if (isSaving) return;
+    setIsModalOpen(false);
+    setIsConfirmOpen(false);
+    setStep('form');
+    setEditingOffer(null);
+  };
+
+  const openCreateModal = () => {
+    resetForm();
+    setEditingOffer(null);
+    setIsModalOpen(true);
+  };
+
+  // Open the offer form prefilled with an existing offer
+  const openEditModal = (offer) => {
+    resetForm();
+    const hasDates = DATE_RE.test(offer.startDate || '') && DATE_RE.test(offer.endDate || '');
+    const isLegacy = !offer.offerType || !hasDates;
+    const badge = normalizeBadgeType(offer.badgeType);
+    const type = offer.offerType === 'combo' || (isLegacy && badge === 'combo-offer') ? 'combo' : 'discount';
+
+    let dates = hasDates ? { startDate: offer.startDate, endDate: offer.endDate } : parseOfferDuration(offer.duration);
+    if (!dates) {
+      const today = todayInOfferTimezone();
+      dates = { startDate: today, endDate: addMonths(today, 1) };
+    }
+
+    // Keep only dishes that still exist on the menu. If the menu hasn't loaded
+    // yet, keep them all rather than treating every dish as removed.
+    const linked = Array.isArray(offer.dishes) ? offer.dishes : [];
+    const kept = dishLookup.size > 0 ? linked.filter(d => dishLookup.has(String(d.dishId))) : linked;
+    const dropped = linked.length - kept.length;
+    const prices = {};
+    kept.forEach(d => {
+      if (d.offerPrice != null) prices[String(d.dishId)] = amountText(d.offerPrice);
+    });
+
+    setName(offer.name || '');
+    setOfferType(type);
+    setDiscountMode(offer.discountMode === 'fixed' ? 'fixed' : 'percentage');
+    setDiscountPercentage(offer.discountPercentage != null
+      ? amountText(offer.discountPercentage)
+      : (isLegacy && type === 'discount' ? legacyPercent(offer.pricePercent) : ''));
+    setComboPrice(offer.comboPrice != null
+      ? amountText(offer.comboPrice)
+      : (isLegacy && type === 'combo' ? legacyAmount(offer.pricePercent) : ''));
+    setStartDate(dates.startDate);
+    setEndDate(dates.endDate);
+    setTiming(offer.timing || 'B/L/D');
+    setBadgeType(badge);
+    setBadgeTouched(true);
+    setSelectedIds([...new Set(kept.map(d => String(d.dishId)))]);
+    setFixedPrices(prices);
+
+    const nextNotices = [];
+    if (isLegacy) {
+      nextNotices.push('This offer was created before dish selection was available. Check its type and dates, choose its dishes, then preview to update it.');
+    }
+    if (dropped > 0) {
+      nextNotices.push(`${dropped} dish${dropped === 1 ? ' in this offer is' : 'es in this offer are'} no longer on your menu and ${dropped === 1 ? 'was' : 'were'} removed from the selection.`);
+    }
+    setNotices(nextNotices);
+    setEditingOffer(offer);
+    setIsModalOpen(true);
+  };
+
+  const handleOfferTypeChange = (type) => {
+    setOfferType(type);
+    if (!badgeTouched) setBadgeType(type === 'combo' ? 'combo-offer' : 'discount');
+  };
+
+  const handleFixedPriceChange = (id, value) => {
+    setFixedPrices(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleDishesChange = (ids) => {
+    setSelectedIds(ids);
+    touch('dishes');
+  };
+
+  // Form -> preview (nothing is sent yet)
+  const handlePreview = (e) => {
+    e.preventDefault();
+    if (!valid) {
+      setTouched({ name: true, dates: true, dishes: true, discountPercentage: true, comboPrice: true });
+      return;
+    }
+    setSaveError('');
+    setStep('preview');
+  };
 
   // Toggle active/inactive state of offer
   const handleToggleActive = async (id) => {
@@ -87,7 +273,7 @@ function Offers({ offers, setOffers }) {
     const nextActive = !offer.isActive;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = authStorage.getToken();
       const response = await fetch(`${API_URL}/api/offers/${id}/toggle`, {
         method: 'PUT',
         headers: {
@@ -102,7 +288,11 @@ function Offers({ offers, setOffers }) {
             return {
               ...o,
               isActive: nextActive,
-              status: nextActive ? 'Active' : 'Inactive'
+              status: nextActive ? 'Active' : 'Inactive',
+              // Keep the schedule-aware status in sync with the toggle
+              ...(o.effectiveStatus
+                ? { effectiveStatus: computeEffectiveStatus({ isActive: nextActive, startDate: o.startDate, endDate: o.endDate }) }
+                : {})
             };
           }
           return o;
@@ -135,7 +325,7 @@ function Offers({ offers, setOffers }) {
     if (checkedIds.length === 0) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = authStorage.getToken();
       const response = await fetch(`${API_URL}/api/offers/delete-batch`, {
         method: 'POST',
         headers: {
@@ -155,51 +345,390 @@ function Offers({ offers, setOffers }) {
     }
   };
 
-  // Create new offer
-  const handleCreateOffer = async (e) => {
-    e.preventDefault();
-    if (!name || !pricePercent || !startDate || !endDate) return;
+  // Confirmed: create the offer, or save changes to the offer being edited
+  const handleConfirmSave = async () => {
+    if (isSaving || !valid) return;
+    const isEdit = !!editingOffer;
+    const payload = buildOfferPayload(draft, {
+      badgeType,
+      timing,
+      isActive: isEdit ? editingOffer.isActive !== false : true
+    });
 
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const formattedDuration = `${months[start.getMonth()]} ${String(start.getDate()).padStart(2, '0')}-${months[end.getMonth()]} ${String(end.getDate()).padStart(2, '0')}`;
-
+    setIsSaving(true);
+    setSaveError('');
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/api/offers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name,
-          badgeType,
-          duration: formattedDuration,
-          timing,
-          pricePercent
-        })
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setOffers(prev => [...prev, data.offer]);
-
-        // Reset fields
-        setName('');
-        setStartDate(getTodayDateString());
-        setEndDate(getFutureDateString(1));
-        setTiming('B/L/D');
-        setPricePercent('');
-        setBadgeType('combo-biriyani');
+      const token = authStorage.getToken();
+      const response = await fetch(
+        isEdit ? `${API_URL}/api/offers/${editingOffer.id}` : `${API_URL}/api/offers`,
+        {
+          method: isEdit ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+      const data = await response.json().catch(() => ({}));
+      if (response.ok && data.offer) {
+        if (isEdit) {
+          setOffers(prev => prev.map(o => (
+            o.id === editingOffer.id ? { ...o, ...data.offer, checked: !!o.checked } : o
+          )));
+        } else {
+          setOffers(prev => [...prev, { checked: false, ...data.offer }]);
+        }
+        setIsSaving(false);
+        setIsConfirmOpen(false);
         setIsModalOpen(false);
-      } else {
-        alert(data.message || 'Failed to create offer');
+        setStep('form');
+        setEditingOffer(null);
+        return;
       }
+      setSaveError(data.message || (isEdit ? 'Failed to update offer' : 'Failed to create offer'));
     } catch (err) {
-      console.error('Error creating offer:', err);
-      alert('Failed to create offer');
+      console.error(isEdit ? 'Error updating offer:' : 'Error creating offer:', err);
+      setSaveError(isEdit ? 'Failed to update offer' : 'Failed to create offer');
     }
+    setIsSaving(false);
+    setIsConfirmOpen(false);
+  };
+
+  // Where the offer will stand once saved (for the preview)
+  const scheduleHint = () => {
+    const today = todayInOfferTimezone();
+    const willBeOn = editingOffer ? editingOffer.isActive !== false : true;
+    const status = computeEffectiveStatus({ isActive: willBeOn, startDate, endDate }, today);
+    if (status === 'inactive') {
+      return { status, text: 'This offer is switched off. Turn it on from the offers list to show it on your menu.' };
+    }
+    if (status === 'scheduled') {
+      const days = daysBetween(today, startDate);
+      return { status, text: `Starts in ${days} day${days === 1 ? '' : 's'} and goes live automatically on ${formatOfferDate(startDate)}.` };
+    }
+    if (status === 'expired') {
+      return { status, text: "The end date has already passed, so this offer will show as Expired and won't appear on your menu." };
+    }
+    return { status, text: editingOffer ? 'Live on your menu now.' : 'Goes live on your menu as soon as you publish.' };
+  };
+
+  const isEdit = !!editingOffer;
+  const scheduleText = startDate && endDate ? `${formatOfferDate(startDate)} → ${formatOfferDate(endDate)}` : '';
+
+  const renderForm = () => (
+    <form onSubmit={handlePreview} noValidate>
+      {notices.length > 0 && (
+        <div className="offer-notice landing_body" role="status">
+          <InfoIcon />
+          <div>
+            {notices.map(text => <p key={text}>{text}</p>)}
+          </div>
+        </div>
+      )}
+
+      <p className="offer-required-note landing_body">
+        Fields marked <span className="offer-required-mark">*</span> are required.
+      </p>
+
+      <div className="form-group">
+        <label className="form-label landing_body is-required" htmlFor="offer-name">
+          Offer Name
+        </label>
+        <input
+          id="offer-name"
+          type="text"
+          className={`form-input landing_placeholder ${visibleError('name') ? 'has-error' : ''}`}
+          placeholder="e.g. Monsoon Special Combo"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => touch('name')}
+          maxLength={255}
+          required
+          aria-invalid={visibleError('name') ? true : undefined}
+        />
+        {visibleError('name') && <span className="offer-field-error" role="alert">{visibleError('name')}</span>}
+      </div>
+
+      <div className="form-group">
+        <span className="form-label landing_body" id="offer-type-label">Offer Type</span>
+        <div className="offer-type-toggle" role="radiogroup" aria-labelledby="offer-type-label">
+          {[
+            { value: 'discount', label: 'Discount Offer', hint: 'Lower the price of chosen dishes' },
+            { value: 'combo', label: 'Combo Offer', hint: 'Bundle dishes for one price' }
+          ].map(opt => (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={offerType === opt.value}
+              className={`offer-type-option ${offerType === opt.value ? 'is-active' : ''}`}
+              onClick={() => handleOfferTypeChange(opt.value)}
+            >
+              <span className="offer-type-option-label">{opt.label}</span>
+              <span className="offer-type-option-hint">{opt.hint}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label className="form-label landing_body is-required" htmlFor="offer-start-date">
+          Duration
+        </label>
+        <div className="offer-duration-row">
+          <input
+            id="offer-start-date"
+            type="date"
+            className="form-input landing_placeholder"
+            value={startDate}
+            onChange={(e) => { setStartDate(e.target.value); touch('dates'); }}
+            aria-label="Start date"
+            required
+            aria-required="true"
+          />
+          <span className="offer-duration-separator landing_body">to</span>
+          <input
+            type="date"
+            className="form-input landing_placeholder"
+            value={endDate}
+            min={startDate || undefined}
+            onChange={(e) => { setEndDate(e.target.value); touch('dates'); }}
+            aria-label="End date"
+            required
+            aria-required="true"
+          />
+        </div>
+        {visibleError('dates') && <span className="offer-field-error" role="alert">{visibleError('dates')}</span>}
+      </div>
+
+      {offerType === 'discount' ? (
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label landing_body" htmlFor="offer-discount-mode">Discount type</label>
+            <select
+              id="offer-discount-mode"
+              className="form-select landing_placeholder"
+              value={discountMode}
+              onChange={(e) => setDiscountMode(e.target.value)}
+            >
+              <option value="percentage">Percentage off</option>
+              <option value="fixed">Fixed offer price</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            {discountMode === 'percentage' ? (
+              <>
+                <label className="form-label landing_body is-required" htmlFor="offer-discount-pct">
+                  Discount (%)
+                </label>
+                <input
+                  id="offer-discount-pct"
+                  type="text"
+                  inputMode="decimal"
+                  required
+                  className={`form-input landing_placeholder ${visibleError('discountPercentage') ? 'has-error' : ''}`}
+                  placeholder="e.g. 15"
+                  value={discountPercentage}
+                  onChange={(e) => { setDiscountPercentage(e.target.value); touch('discountPercentage'); }}
+                />
+                {visibleError('discountPercentage') && (
+                  <span className="offer-field-error" role="alert">{visibleError('discountPercentage')}</span>
+                )}
+              </>
+            ) : (
+              <p className="offer-field-hint landing_body">Set an offer price for each selected dish below.</p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="form-group">
+          <label className="form-label landing_body is-required" htmlFor="offer-combo-price">
+            Combo price (Rs)
+          </label>
+          <input
+            id="offer-combo-price"
+            type="text"
+            inputMode="decimal"
+            required
+            className={`form-input landing_placeholder ${visibleError('comboPrice') ? 'has-error' : ''}`}
+            placeholder="e.g. 499"
+            value={comboPrice}
+            onChange={(e) => { setComboPrice(e.target.value); touch('comboPrice'); }}
+          />
+          {selectedIds.length > 0 && (
+            <span className="offer-field-hint landing_body">
+              Dishes total: {formatPrice(selectedIds.reduce((sum, id) => sum + (dishLookup.get(id)?.price || 0), 0))}
+            </span>
+          )}
+          {visibleError('comboPrice') && <span className="offer-field-error" role="alert">{visibleError('comboPrice')}</span>}
+        </div>
+      )}
+
+      <div className="form-row">
+        <div className="form-group">
+          <label className="form-label landing_body" htmlFor="offer-timing">Timing</label>
+          <select
+            id="offer-timing"
+            className="form-select landing_placeholder"
+            value={timing}
+            onChange={(e) => setTiming(e.target.value)}
+          >
+            <option value="B/L/D">B/L/D (Breakfast/Lunch/Dinner)</option>
+            <option value="L/D">L/D (Lunch/Dinner)</option>
+            <option value="B/L">B/L (Breakfast/Lunch)</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label className="form-label landing_body" htmlFor="offer-badge">Badge Style</label>
+          <select
+            id="offer-badge"
+            className="form-select landing_placeholder"
+            value={badgeType}
+            onChange={(e) => { setBadgeType(e.target.value); setBadgeTouched(true); }}
+          >
+            <option value="combo-offer">Combo offer</option>
+            <option value="discount">Discount</option>
+            <option value="weekend-offer">weekend offer</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="form-group">
+        <span className="form-label landing_body is-required">
+          {offerType === 'combo' ? 'Dishes in this combo' : 'Dishes on offer'}
+        </span>
+        <OfferDishPicker
+          categories={categories}
+          selectedIds={selectedIds}
+          onChange={handleDishesChange}
+          mode={offerType === 'combo' ? 'combo' : discountMode}
+          discountPercentage={discountPercentage}
+          fixedPrices={fixedPrices}
+          onFixedPriceChange={handleFixedPriceChange}
+          fixedErrors={visibleFixedErrors}
+        />
+        {visibleError('dishes') && <span className="offer-field-error" role="alert">{visibleError('dishes')}</span>}
+      </div>
+
+      {!valid && previewBlockers.length > 0 && (
+        <div className="offer-preview-blocker landing_body" id="offer-preview-blockers">
+          <p>To preview this offer, complete the required fields:</p>
+          <ul>
+            {previewBlockers.map(text => <li key={text}>{text}</li>)}
+          </ul>
+        </div>
+      )}
+
+      <div className="modal-footer">
+        <button type="button" className="btn btn-secondary landing_button" onClick={closeModal}>Cancel</button>
+        <button
+          type="submit"
+          className="btn btn-primary landing_button"
+          disabled={!valid}
+          aria-describedby={valid ? undefined : 'offer-preview-blockers'}
+          title={valid ? undefined : 'Complete the required fields first'}
+        >
+          Preview
+        </button>
+      </div>
+    </form>
+  );
+
+  const renderPreview = () => {
+    if (!preview) return null;
+    const hint = scheduleHint();
+    const isCombo = preview.offerType === 'combo';
+    return (
+      <div className="offer-preview">
+        <div className="offer-preview-summary">
+          <div className="offer-preview-badge"><OfferBadge badgeType={badgeType} /></div>
+          <div className="offer-preview-heading">
+            <span className="offer-preview-name">{name.trim()}</span>
+            <span className="offer-preview-meta">
+              {isCombo
+                ? 'Combo offer'
+                : preview.discountMode === 'fixed'
+                  ? 'Discount offer · fixed prices'
+                  : `Discount offer · ${preview.discountPercentage}% off`}
+            </span>
+          </div>
+        </div>
+
+        <dl className="offer-preview-facts">
+          <div>
+            <dt>Schedule</dt>
+            <dd>{scheduleText}</dd>
+          </div>
+          <div>
+            <dt>Timing</dt>
+            <dd>{TIMING_LABELS[timing] || timing}</dd>
+          </div>
+        </dl>
+
+        <p className={`offer-preview-status is-${hint.status}`}>{hint.text}</p>
+
+        <div className="offer-preview-table" role="table" aria-label="Offer dishes">
+          <div className={`offer-preview-tr offer-preview-th ${isCombo ? 'is-combo' : ''}`} role="row">
+            <span role="columnheader">Dish</span>
+            <span role="columnheader">{isCombo ? 'Price' : 'Original → Offer'}</span>
+            {!isCombo && <span role="columnheader">Save</span>}
+          </div>
+          {preview.rows.map(row => (
+            <div key={row.dishId} className={`offer-preview-tr ${isCombo ? 'is-combo' : ''}`} role="row" data-testid="offer-preview-row">
+              <span role="cell" className="offer-preview-dish">
+                {row.name}
+                <small>{row.categoryName}</small>
+              </span>
+              {isCombo ? (
+                <span role="cell">{formatPrice(row.originalPrice)}</span>
+              ) : (
+                <span role="cell" className="offer-preview-prices">
+                  <s>{formatPrice(row.originalPrice)}</s>
+                  <span aria-hidden="true"> → </span>
+                  <strong>{formatPrice(row.offerPrice)}</strong>
+                </span>
+              )}
+              {!isCombo && <span role="cell" className="offer-preview-save">{formatPrice(row.savings)}</span>}
+            </div>
+          ))}
+        </div>
+
+        <dl className="offer-preview-totals" aria-label="Offer totals">
+          <div>
+            <dt>Dishes</dt>
+            <dd>{preview.dishCount}</dd>
+          </div>
+          <div>
+            <dt>Original total</dt>
+            <dd>{formatPrice(preview.originalTotal)}</dd>
+          </div>
+          <div>
+            <dt>{isCombo ? 'Combo price' : 'Offer total'}</dt>
+            <dd>{formatPrice(preview.offerTotal)}</dd>
+          </div>
+          <div className="offer-preview-total-savings">
+            <dt>{isCombo ? 'Customer saves' : 'Total savings'}</dt>
+            <dd>{formatPrice(preview.totalSavings)} ({preview.percentOff}% off)</dd>
+          </div>
+        </dl>
+
+        <p className="offer-field-hint landing_body">Your menu's dish prices stay unchanged.</p>
+
+        {saveError && <div className="offer-save-error" role="alert">{saveError}</div>}
+
+        <div className="modal-footer">
+          <button type="button" className="btn btn-secondary landing_button" onClick={() => setStep('form')} disabled={isSaving}>
+            Back
+          </button>
+          <button type="button" className="btn btn-primary landing_button" onClick={() => setIsConfirmOpen(true)} disabled={isSaving}>
+            {isEdit ? 'Save changes' : 'Publish offer'}
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -208,69 +737,97 @@ function Offers({ offers, setOffers }) {
 
       <div className="offers-list">
         {offers.length > 0 ? (
-          offers.map(offer => (
-            <div key={offer.id} className={`offer-row-card ${!offer.isActive ? 'inactive-row' : ''}`}>
-              {/* Checkbox */}
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <input 
-                  type="checkbox" 
-                  className="offer-row-checkbox"
-                  checked={offer.checked}
-                  onChange={() => handleToggleChecked(offer.id)}
-                />
-              </div>
-
-              {/* Toggle Switch */}
-              <div style={{ display: 'flex', alignItems: 'center', marginLeft: '12px' }}>
-                <label className="offer-toggle-switch">
-                  <input 
-                    type="checkbox" 
-                    checked={offer.isActive}
-                    onChange={() => handleToggleActive(offer.id)}
+          offers.map(offer => {
+            const statusKey = getOfferStatusKey(offer);
+            const dishCount = Array.isArray(offer.dishes) ? offer.dishes.length : 0;
+            const duration = offer.startDate && offer.endDate
+              ? formatOfferDuration(offer.startDate, offer.endDate)
+              : offer.duration;
+            const dimmed = statusKey === 'inactive' || statusKey === 'expired';
+            return (
+              <div key={offer.id} className={`offer-row-card ${dimmed ? 'inactive-row' : ''}`}>
+                {/* Checkbox */}
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <input
+                    type="checkbox"
+                    className="offer-row-checkbox"
+                    checked={!!offer.checked}
+                    onChange={() => handleToggleChecked(offer.id)}
+                    aria-label={`Select offer ${offer.name}`}
                   />
-                  <span className="offer-toggle-slider"></span>
-                </label>
+                </div>
+
+                {/* Toggle Switch */}
+                <div style={{ display: 'flex', alignItems: 'center', marginLeft: '12px' }}>
+                  <label className="offer-toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={!!offer.isActive}
+                      onChange={() => handleToggleActive(offer.id)}
+                      aria-label={`Turn offer ${offer.name} ${offer.isActive ? 'off' : 'on'}`}
+                    />
+                    <span className="offer-toggle-slider"></span>
+                  </label>
+                </div>
+
+                {/* Badge Icon */}
+                <div className="offer-badge-col" style={{ marginLeft: '16px', width: '56px', display: 'flex', justifyContent: 'center' }}>
+                  <OfferBadge badgeType={offer.badgeType} />
+                </div>
+
+                {/* Columns Details */}
+                <div className="offer-details-grid">
+                  <div className="offer-detail-col">
+                    <span className="offer-col-label landing_body">Offer name</span>
+                    <span className="offer-col-value landing_body">{offer.name}</span>
+                    {dishCount > 0 && (
+                      <span className="offer-col-sub landing_body">
+                        {offer.offerType === 'combo' ? 'Combo' : 'Discount'} · {dishCountText(dishCount)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="offer-detail-col">
+                    <span className="offer-col-label landing_body">Duration</span>
+                    <span className="offer-col-value landing_body">{duration}</span>
+                  </div>
+
+                  <div className="offer-detail-col">
+                    <span className="offer-col-label landing_body">Status</span>
+                    <span
+                      className={`offer-col-value status-badge landing_body ${statusKey}`}
+                      title={statusTitle(offer, statusKey)}
+                      data-testid="offer-status"
+                    >
+                      {OFFER_STATUS_LABELS[statusKey]}
+                    </span>
+                  </div>
+
+                  <div className="offer-detail-col">
+                    <span className="offer-col-label landing_body">Timing</span>
+                    <span className="offer-col-value landing_body">{offer.timing}</span>
+                  </div>
+
+                  <div className="offer-detail-col">
+                    <span className="offer-col-label landing_body">Price/percentage</span>
+                    <span className="offer-col-value landing_body">{describeOfferPrice(offer)}</span>
+                  </div>
+                </div>
+
+                {/* Edit action */}
+                <button
+                  type="button"
+                  className="offer-edit-btn landing_button"
+                  onClick={() => openEditModal(offer)}
+                  title="Edit offer"
+                  aria-label={`Edit offer ${offer.name}`}
+                >
+                  <EditIcon />
+                  Edit
+                </button>
               </div>
-
-              {/* Badge Icon */}
-              <div className="offer-badge-col" style={{ marginLeft: '16px', width: '56px', display: 'flex', justifyContent: 'center' }}>
-                {offer.badgeType === 'combo-biriyani' && <ComboOfferBadge type="biriyani" />}
-                {offer.badgeType === 'combo-veg' && <ComboOfferBadge type="veg" />}
-                {offer.badgeType === 'percent-paneer' && <PercentTagBadge />}
-                {offer.badgeType === 'weekend-vibe' && <WeekendOfferBadge />}
-              </div>
-
-              {/* Columns Details */}
-              <div className="offer-details-grid">
-                <div className="offer-detail-col">
-                  <span className="offer-col-label landing_body">Offer name</span>
-                  <span className="offer-col-value landing_body">{offer.name}</span>
-                </div>
-
-                <div className="offer-detail-col">
-                  <span className="offer-col-label landing_body">Duration</span>
-                  <span className="offer-col-value landing_body">{offer.duration}</span>
-                </div>
-
-                <div className="offer-detail-col">
-                  <span className="offer-col-label landing_body">Status</span>
-                  <span className={`offer-col-value status-badge landing_body ${offer.isActive ? 'active' : 'inactive'}`}>
-                    {offer.status}
-                  </span>
-                </div>
-
-                <div className="offer-detail-col">
-                  <span className="offer-col-label landing_body">Timing</span>
-                  <span className="offer-col-value landing_body">{offer.timing}</span>
-                </div>
-
-                <div className="offer-detail-col">
-                  <span className="offer-col-label landing_body">Price/percentage</span>
-                  <span className="offer-col-value landing_body">{offer.pricePercent}</span>
-                </div>
-              </div>
-            </div>
-          ))
+            );
+          })
         ) : (
           <div className="empty-state" style={{ background: 'var(--bg-white)', borderRadius: '8px', padding: '40px', textAlign: 'center', border: '1px solid var(--border)' }}>
             <h4 className="landing_heading2" style={{ margin: '0 0 4px 0' }}>No offers active</h4>
@@ -281,8 +838,8 @@ function Offers({ offers, setOffers }) {
 
       {/* Floating Action Buttons */}
       {offers.some(o => o.checked) && (
-        <button 
-          className="fab-action-btn delete-btn-img-btn" 
+        <button
+          className="fab-action-btn delete-btn-img-btn menu-fab-wrapper"
           onClick={handleDeleteSelected}
           title="Delete Selected Offers"
           style={{
@@ -301,9 +858,9 @@ function Offers({ offers, setOffers }) {
         </button>
       )}
 
-      <button 
-        className="fab-action-btn add-btn-img-btn" 
-        onClick={() => setIsModalOpen(true)}
+      <button
+        className="fab-action-btn add-btn-img-btn menu-fab-wrapper"
+        onClick={openCreateModal}
         title="Add New Offer"
         style={{
           position: 'fixed',
@@ -320,99 +877,85 @@ function Offers({ offers, setOffers }) {
         <img src={addBtnIcon} alt="Add New Offer" style={{ width: '50px', height: '50px', display: 'block' }} />
       </button>
 
-      {/* Add Offer Modal */}
+      {/* Add / Edit Offer Modal: form -> preview */}
       {isModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay offer-modal-overlay" onClick={closeModal}>
+          <div
+            className="modal-content offer-modal-content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="offer-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
-              <h3 className="modal-title landing_heading2">Create New Offer</h3>
-              <button className="modal-close-btn" onClick={() => setIsModalOpen(false)}>×</button>
+              <h3 id="offer-modal-title" className="modal-title landing_heading2">
+                {step === 'preview'
+                  ? 'Preview Offer'
+                  : (isEdit ? 'Edit Offer' : 'Create New Offer')}
+              </h3>
+              <button type="button" className="modal-close-btn" onClick={closeModal} aria-label="Close">×</button>
             </div>
 
-            <form onSubmit={handleCreateOffer}>
-              <div className="form-group">
-                <label className="form-label landing_body">Offer Name</label>
-                <input 
-                  type="text" 
-                  className="form-input landing_placeholder" 
-                  placeholder="e.g. Monsoon Special Combo"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required 
-                />
+            {step === 'preview' && preview ? renderPreview() : renderForm()}
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation before anything is sent */}
+      {isModalOpen && isConfirmOpen && preview && (
+        <div className="modal-overlay offer-confirm-overlay" onClick={() => !isSaving && setIsConfirmOpen(false)}>
+          <div
+            className="category-modal-content"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="offer-confirm-title"
+            aria-describedby="offer-confirm-desc"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && !isSaving) setIsConfirmOpen(false);
+            }}
+          >
+            <div className="category-modal-header">
+              <h3 id="offer-confirm-title" className="category-modal-title">
+                {isEdit ? 'Save changes?' : 'Publish this offer?'}
+              </h3>
+            </div>
+
+            <div className="offer-confirm-body">
+              <p id="offer-confirm-desc" className="offer-confirm-text">
+                {isEdit ? 'Update ' : 'Publish '}<strong>"{name.trim()}"</strong>{' '}
+                {preview.offerType === 'combo'
+                  ? `as a combo of ${dishCountText(preview.dishCount)} for ${formatPrice(preview.comboPrice)}`
+                  : `with a discount on ${dishCountText(preview.dishCount)}`}
+                , running {scheduleText}?
+              </p>
+              <div className="offer-confirm-note">
+                <InfoIcon />
+                <span>
+                  Customers see the offer on your public menu only while it is active. Your dishes' regular prices are not changed.
+                </span>
               </div>
 
-              <div className="form-row">
-                <div className="form-group" style={{ flex: '1.5' }}>
-                  <label className="form-label landing_body">Duration</label>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input 
-                      type="date" 
-                      className="form-input landing_placeholder" 
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      required 
-                      style={{ padding: '8px 10px' }}
-                    />
-                    <span className="landing_body" style={{ color: 'var(--text-muted)' }}>to</span>
-                    <input 
-                      type="date" 
-                      className="form-input landing_placeholder" 
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      required 
-                      style={{ padding: '8px 10px' }}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label landing_body">Price/percentage</label>
-                  <input 
-                    type="text" 
-                    className="form-input landing_placeholder" 
-                    placeholder="e.g. 150 Rs or 15%"
-                    value={pricePercent}
-                    onChange={(e) => setPricePercent(e.target.value)}
-                    required 
-                  />
-                </div>
+              <div className="category-modal-footer">
+                <button
+                  type="button"
+                  className="btn-create-category"
+                  onClick={handleConfirmSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving…' : (isEdit ? 'Save changes' : 'Publish')}
+                </button>
+                <button
+                  type="button"
+                  className="btn-cancel-category"
+                  onClick={() => setIsConfirmOpen(false)}
+                  disabled={isSaving}
+                  autoFocus
+                >
+                  Cancel
+                </button>
               </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label landing_body">Timing</label>
-                  <select 
-                    className="form-select landing_placeholder"
-                    value={timing}
-                    onChange={(e) => setTiming(e.target.value)}
-                  >
-                    <option value="B/L/D">B/L/D (Breakfast/Lunch/Dinner)</option>
-                    <option value="L/D">L/D (Lunch/Dinner)</option>
-                    <option value="B/L">B/L (Breakfast/Lunch)</option>
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label landing_body">Badge Style</label>
-                  <select 
-                    className="form-select landing_placeholder"
-                    value={badgeType}
-                    onChange={(e) => setBadgeType(e.target.value)}
-                  >
-                    <option value="combo-biriyani">Blue Combo Offer (Biriyani)</option>
-                    <option value="combo-veg">Blue Combo Offer (Veg)</option>
-                    <option value="percent-paneer">Red Percent Tag (%)</option>
-                    <option value="weekend-vibe">Red Weekend Offer</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary landing_button" onClick={() => setIsModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary landing_button">Create Offer</button>
-              </div>
-            </form>
+            </div>
           </div>
         </div>
       )}

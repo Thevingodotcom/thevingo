@@ -146,6 +146,13 @@
   text-decoration: underline;
 }
 
+.otp-resend button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+
 .otp-error-message {
   color: #ef4444;
   margin-bottom: 20px;

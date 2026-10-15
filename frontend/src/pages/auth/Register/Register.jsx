@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { API_URL } from '../../../config';
 import { haptics } from '../../../utils/haptics';
+import authStorage from '../../../app/authStorage';
+import useResendTimer, { formatCountdown } from '../useResendTimer';
 import './Register.css';
 import logoIcon from '../../../assets/icons/Frame 123.svg';
 import '../OTPVerification/OTPVerification.css'; // Import OTP styles
@@ -23,6 +25,9 @@ const Register = ({ onRegister }) => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  // Resend cooldown; started whenever an OTP is sent (entering step 2 or resending).
+  const { secondsLeft, canResend, restart: restartResendTimer } = useResendTimer(undefined, false);
+  const submittingRef = useRef(false);
 
   // OTP State
   const [otp, setOtp] = useState(new Array(6).fill(''));
@@ -72,6 +77,7 @@ const Register = ({ onRegister }) => {
 
   const handleNextStep = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     haptics.light();
     setError('');
 
@@ -81,6 +87,7 @@ const Register = ({ onRegister }) => {
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     try {
       // 1. Check if email is available
@@ -109,17 +116,22 @@ const Register = ({ onRegister }) => {
 
       haptics.success();
       setSuccess('OTP sent to your email.');
+      setOtp(new Array(6).fill(''));
+      setActiveOTPIndex(0);
+      restartResendTimer();
       setStep(2);
     } catch (err) {
       haptics.error();
       setError(err.message);
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
 
   const handleVerifyOTP = async (e) => {
     e?.preventDefault();
+    if (submittingRef.current) return;
     haptics.light();
     const otpValue = otp.join('');
 
@@ -129,6 +141,7 @@ const Register = ({ onRegister }) => {
       return;
     }
 
+    submittingRef.current = true;
     setLoading(true);
     setError('');
     setSuccess('');
@@ -144,26 +157,26 @@ const Register = ({ onRegister }) => {
 
       if (response.ok) {
         haptics.success();
+        // Proceed to Hotel Details immediately; the message is shown on step 3.
         setSuccess('Email verified successfully!');
-        setTimeout(() => {
-          setSuccess('');
-          setStep(3); // Proceed to Hotel Details
-        }, 1000);
+        setStep(3);
       } else {
         haptics.error();
         setError(data.message || 'Invalid OTP. Please try again.');
         setOtp(new Array(6).fill(''));
         setActiveOTPIndex(0);
       }
-    } catch (err) {
+    } catch {
       haptics.error();
       setError('Something went wrong. Please try again later.');
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
 
   const handleResendOTP = async () => {
+    if (!canResend || resending) return;
     haptics.light();
     setResending(true);
     setError('');
@@ -182,11 +195,12 @@ const Register = ({ onRegister }) => {
         setSuccess('A new OTP has been sent to your email.');
         setOtp(new Array(6).fill(''));
         setActiveOTPIndex(0);
+        restartResendTimer();
       } else {
         haptics.error();
         setError(data.message || 'Failed to resend OTP.');
       }
-    } catch (err) {
+    } catch {
       haptics.error();
       setError('Something went wrong. Please try again later.');
     } finally {
@@ -196,8 +210,11 @@ const Register = ({ onRegister }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     haptics.light();
     setError('');
+    setSuccess('');
+    submittingRef.current = true;
     setLoading(true);
 
     try {
@@ -227,15 +244,16 @@ const Register = ({ onRegister }) => {
 
       haptics.success();
 
-      // Store JWT token and user info
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      // Store JWT token and user info in session storage
+      authStorage.setToken(data.token);
+      authStorage.setUser(data.user);
 
       onRegister?.();
     } catch (err) {
       haptics.error();
       setError(err.message);
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -338,6 +356,11 @@ const Register = ({ onRegister }) => {
                 {loading ? 'Checking...' : 'Next'}
               </button>
             </div>
+
+            <p className="register-switch-text landing_body">
+              Already have an account?{' '}
+              <Link to="/login" className="register-switch-link landing_anchor">Log in</Link>
+            </p>
           </form>
         )}
 
@@ -396,8 +419,18 @@ const Register = ({ onRegister }) => {
 
             <p className="otp-resend landing_body" style={{ marginTop: '16px' }}>
               Didn't receive the code?
-              <button type="button" onClick={handleResendOTP} disabled={resending} className="landing_anchor">
-                {resending ? 'Sending...' : 'Resend OTP'}
+              <button
+                type="button"
+                onClick={handleResendOTP}
+                disabled={!canResend || resending || loading}
+                className="landing_anchor"
+                aria-live="polite"
+              >
+                {resending
+                  ? 'Sending...'
+                  : canResend
+                    ? 'Resend OTP'
+                    : `Resend OTP in ${formatCountdown(secondsLeft)}`}
               </button>
             </p>
           </form>

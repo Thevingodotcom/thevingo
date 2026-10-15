@@ -189,6 +189,35 @@ input::-ms-clear {
   text-align: left;
 }
 
+.login-success-msg {
+  font-family: 'Inter', sans-serif;
+  font-size: var(--label-size);
+  color: #16a34a;
+  margin: 0;
+  width: 100%;
+  text-align: left;
+}
+
+/* "New to Vingo? Create account" / "Already have an account? Log in" */
+.login-switch-text {
+  font-family: 'Inter', sans-serif;
+  font-size: var(--label-size);
+  color: #7c7c7c;
+  margin: 4px 0 0;
+  width: 100%;
+  text-align: left;
+}
+
+.login-switch-link {
+  color: #EF5C43;
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.login-switch-link:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 768px) {
   .login-card {
     flex-direction: column;

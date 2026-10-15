@@ -172,6 +172,26 @@
   text-align: left;
 }
 
+/* "Already have an account? Log in" */
+.register-switch-text {
+  font-family: 'Inter', sans-serif;
+  font-size: var(--label-size);
+  color: #7c7c7c;
+  margin: 4px 0 0;
+  width: 100%;
+  text-align: left;
+}
+
+.register-switch-link {
+  color: #EF5C43;
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.register-switch-link:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 768px) {
   .register-card {
     flex-direction: column;

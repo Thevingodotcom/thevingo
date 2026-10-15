@@ -1,0 +1,854 @@
+/* Offers page: per-row "Edit" action (pencil icon + label in the primary color) */
+
+.offer-edit-btn {
+  align-self: center;
+  margin-left: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1.5px solid var(--primary);
+  background: var(--primary);
+  color: #ffffff;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.offer-edit-btn:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: #ffffff;
+}
+
+.offer-edit-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Mobile: the sidebar becomes a fixed 64px-tall bottom tab bar
+   (see src/index.css @media (max-width: 768px) .sidebar) that sits above
+   the FAB's inline bottom position / z-index: 100, hiding it. Push the
+   Add-offer and Delete-selected FABs (shared .menu-fab-wrapper class)
+   above the bar and over it. */
+@media (max-width: 768px) {
+  .menu-fab-wrapper {
+    bottom: 80px !important;
+    z-index: 1001 !important;
+  }
+}
+
+/* ==========================================================================
+   Offer form: type, dish picker, preview, confirmation
+   ========================================================================== */
+
+/* Above the mobile bottom tab bar (z-index 1000) and the FABs (1001) */
+.modal-overlay.offer-modal-overlay {
+  z-index: 1100;
+}
+
+.modal-overlay.offer-confirm-overlay {
+  z-index: 1110;
+}
+
+/* The form + dish picker can be taller than the viewport: scroll inside */
+.modal-content.offer-modal-content {
+  max-height: 90vh;
+  max-height: 90dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.offer-modal-content .form-input.has-error {
+  border-color: #dc2626;
+}
+
+.offer-field-error {
+  display: block;
+  margin-top: 4px;
+  color: #dc2626;
+  font-size: var(--caption-size);
+  line-height: 1.4;
+}
+
+.offer-field-hint {
+  display: block;
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: var(--caption-size);
+  line-height: 1.4;
+}
+
+/* In the discount row the hint takes the place of the % input */
+.form-group > p.offer-field-hint {
+  margin-top: 26px;
+}
+
+.offer-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  background-color: #fff7ed;
+  color: #9a3412;
+  font-size: var(--caption-size);
+  line-height: 1.5;
+}
+
+.offer-notice svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.offer-notice p {
+  margin: 0;
+}
+
+.offer-notice p + p {
+  margin-top: 6px;
+}
+
+/* ---------- Offer type (Discount / Combo) ---------- */
+.offer-type-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.offer-type-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background-color: var(--bg-white);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.offer-type-option:hover {
+  border-color: #9ca3af;
+}
+
+.offer-type-option.is-active {
+  border-color: var(--primary);
+  background-color: var(--primary-light);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.offer-type-option:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.offer-type-option-label {
+  font-size: var(--body-small-size);
+  font-weight: var(--weight-semibold);
+  color: var(--text-dark);
+}
+
+.offer-type-option-hint {
+  font-size: var(--caption-size);
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+/* ---------- Dish picker ---------- */
+.offer-dish-picker {
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: var(--bg-white);
+}
+
+.offer-dish-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.offer-dish-count {
+  font-size: var(--caption-size);
+  font-weight: var(--weight-semibold);
+  color: var(--text-dark);
+}
+
+.offer-link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--primary);
+  font-family: inherit;
+  font-size: var(--caption-size);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.offer-link-btn:hover {
+  text-decoration: underline;
+}
+
+.offer-dish-search {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  margin: 8px 12px;
+  padding-left: 10px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  background-color: var(--bg-white);
+  transition: border-color 0.2s;
+}
+
+.offer-dish-search:focus-within {
+  border-color: #9ca3af;
+}
+
+.offer-dish-search-icon {
+  display: flex;
+  flex-shrink: 0;
+  color: #9ca3af;
+}
+
+.offer-dish-search:focus-within .offer-dish-search-icon {
+  color: var(--text-dark);
+}
+
+.offer-dish-search-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 10px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text-dark);
+  font-size: var(--chip-size);
+}
+
+.offer-dish-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  margin-right: 6px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.offer-dish-search-clear:hover {
+  background-color: #f3f4f6;
+  color: var(--text-dark);
+}
+
+.offer-dish-list {
+  max-height: 280px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.offer-dish-empty {
+  margin: 0;
+  padding: 16px 12px;
+  color: var(--text-muted);
+  font-size: var(--caption-size);
+  text-align: center;
+}
+
+.offer-dish-group-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background-color: #f9fafb;
+  color: #374151;
+  font-size: var(--caption-size);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+}
+
+.offer-dish-group-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.offer-dish-group-count {
+  color: var(--text-muted);
+  font-weight: var(--weight-medium);
+}
+
+.offer-dish-row {
+  padding: 8px 12px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.offer-dish-row.is-selected {
+  background-color: rgba(240, 90, 40, 0.05);
+}
+
+.offer-dish-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.offer-dish-picker .offer-row-checkbox {
+  flex-shrink: 0;
+}
+
+.offer-row-checkbox:indeterminate {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.offer-row-checkbox:indeterminate::after {
+  content: '\2013';
+  color: #fff;
+  font-size: var(--badge-size);
+  font-weight: var(--weight-black);
+  line-height: 1;
+}
+
+.offer-veg-dot {
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: #16a34a;
+}
+
+.offer-veg-dot.non-veg {
+  background-color: #dc2626;
+}
+
+.offer-dish-name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-dark);
+  font-size: var(--body-small-size);
+}
+
+.offer-dish-price {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: var(--caption-size);
+  white-space: nowrap;
+}
+
+.offer-dish-price.is-struck {
+  text-decoration: line-through;
+}
+
+.offer-dish-new-price {
+  flex-shrink: 0;
+  color: var(--primary);
+  font-size: var(--caption-size);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+.offer-dish-fixed {
+  display: flex;
+  flex-direction: column;
+  margin: 6px 0 0 28px;
+}
+
+.offer-modal-content .form-input.offer-dish-fixed-input {
+  width: 100%;
+  max-width: 160px;
+  height: 32px;
+}
+
+/* ---------- Preview ---------- */
+.offer-preview-summary {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.offer-preview-badge {
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 60px;
+}
+
+.offer-preview-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.offer-preview-name {
+  color: var(--text-dark);
+  font-size: var(--body-small-size);
+  font-weight: var(--weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.offer-preview-meta {
+  color: var(--text-muted);
+  font-size: var(--caption-size);
+}
+
+.offer-preview-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  margin: 0 0 12px;
+}
+
+.offer-preview-facts dt,
+.offer-preview-totals dt {
+  color: var(--text-muted);
+  font-size: var(--caption-size);
+  font-weight: var(--weight-medium);
+}
+
+.offer-preview-facts dd {
+  margin: 2px 0 0;
+  color: var(--text-dark);
+  font-size: var(--chip-size);
+  font-weight: var(--weight-semibold);
+}
+
+.offer-preview-status {
+  margin: 0 0 14px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background-color: #f3f4f6;
+  color: #374151;
+  font-size: var(--caption-size);
+  line-height: 1.5;
+}
+
+.offer-preview-status.is-active {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.offer-preview-status.is-scheduled {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+}
+
+.offer-preview-status.is-expired {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.offer-preview-table {
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.offer-preview-tr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--text-dark);
+  font-size: var(--chip-size);
+}
+
+.offer-preview-tr.is-combo {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.offer-preview-tr:first-child {
+  border-top: none;
+}
+
+.offer-preview-th {
+  position: sticky;
+  top: 0;
+  background-color: #f9fafb;
+  color: var(--text-muted);
+  font-size: var(--caption-size);
+  font-weight: var(--weight-semibold);
+}
+
+.offer-preview-dish {
+  overflow-wrap: anywhere;
+}
+
+.offer-preview-dish small {
+  display: block;
+  color: var(--text-muted);
+  font-size: var(--caption-size);
+}
+
+.offer-preview-prices {
+  white-space: nowrap;
+}
+
+.offer-preview-prices s {
+  color: var(--text-muted);
+}
+
+.offer-preview-save {
+  color: #047857;
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.offer-preview-totals {
+  margin: 12px 0 0;
+}
+
+.offer-preview-totals > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.offer-preview-totals dd {
+  margin: 0;
+  color: var(--text-dark);
+  font-size: var(--chip-size);
+  font-weight: var(--weight-semibold);
+  text-align: right;
+}
+
+.offer-preview-totals > .offer-preview-total-savings {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.offer-preview-total-savings dd {
+  color: #047857;
+  font-weight: var(--weight-bold);
+}
+
+.offer-save-error {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background-color: #fef2f2;
+  color: #b91c1c;
+  font-size: var(--caption-size);
+}
+
+.offer-preview-blocker {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: var(--caption-size);
+}
+
+.offer-preview-blocker p {
+  margin: 0 0 2px;
+}
+
+.offer-preview-blocker ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.offer-required-note {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: var(--caption-size);
+}
+
+.offer-required-mark,
+.offer-modal-content .form-label.is-required::after {
+  color: #dc2626;
+  font-weight: var(--weight-semibold);
+}
+
+/* Drawn by CSS so the label text (and accessible name) stays clean; the field's
+   required attribute tells screen readers it is required. */
+.offer-modal-content .form-label.is-required::after {
+  content: ' *';
+  content: ' *' / '';
+}
+
+/* Make a blocked Preview / Publish look unavailable, not just ignore clicks */
+.offer-modal-content .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.offer-modal-content .btn-primary:disabled:hover {
+  background-color: var(--primary);
+}
+
+/* ---------- Confirmation dialog (category-modal look) ---------- */
+.offer-confirm-body {
+  padding: 24px 28px;
+}
+
+.offer-confirm-text {
+  margin: 0;
+  color: #374151;
+  font-size: var(--body-small-size);
+  line-height: 1.6;
+}
+
+.offer-confirm-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background-color: #f9fafb;
+  color: #374151;
+  font-size: var(--caption-size);
+  line-height: 1.5;
+}
+
+.offer-confirm-note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.offer-confirm-body .category-modal-footer {
+  margin-top: 24px;
+}
+
+.offer-confirm-body .btn-create-category:disabled,
+.offer-confirm-body .btn-cancel-category:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ---------- List: status colours and type/dish summary ---------- */
+.offer-col-sub {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: var(--tiny-text-size);
+}
+
+.offer-col-value.status-badge.scheduled {
+  color: #1d4ed8;
+}
+
+.offer-col-value.status-badge.expired {
+  color: #b91c1c;
+}
+
+.offer-col-value.status-badge.unscheduled {
+  color: #b45309;
+}
+
+@media (max-width: 640px) {
+  .offer-confirm-body {
+    padding: 20px;
+  }
+
+  .offer-dish-fixed {
+    margin-left: 0;
+  }
+
+  .offer-modal-content .form-input.offer-dish-fixed-input {
+    max-width: none;
+  }
+
+  .offer-preview-tr {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+}
+
+@media (max-width: 420px) {
+  /* Paired fields stack on narrow phones */
+  .offer-modal-content .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .form-group > p.offer-field-hint {
+    margin-top: 0;
+  }
+
+  /* Start / end dates stack so the year isn't cut off by the picker icon */
+  .offer-modal-content .offer-duration-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .offer-modal-content .offer-duration-separator {
+    text-align: left;
+  }
+
+  /* Discount rows: dish on top, prices and savings underneath */
+  .offer-preview-tr:not(.is-combo) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .offer-preview-tr:not(.is-combo) > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .offer-preview-th:not(.is-combo) > :first-child {
+    grid-column: auto;
+  }
+
+  .offer-preview-th:not(.is-combo) > :nth-child(2) {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Dark theme
+   ========================================================================== */
+.app-container[data-theme="dark"] .offer-modal-content .form-input.has-error {
+  border-color: #f87171;
+}
+
+.app-container[data-theme="dark"] .offer-field-error,
+.app-container[data-theme="dark"] .offer-required-mark,
+.app-container[data-theme="dark"] .offer-modal-content .form-label.is-required::after {
+  color: #f87171;
+}
+
+.app-container[data-theme="dark"] .offer-notice {
+  border-color: rgba(240, 90, 40, 0.4);
+  background-color: rgba(240, 90, 40, 0.12);
+  color: #fdba74;
+}
+
+.app-container[data-theme="dark"] .offer-type-option,
+.app-container[data-theme="dark"] .offer-dish-picker,
+.app-container[data-theme="dark"] .offer-dish-search {
+  border-color: #3a3b42;
+}
+
+.app-container[data-theme="dark"] .offer-type-option:hover,
+.app-container[data-theme="dark"] .offer-dish-search:focus-within {
+  border-color: #5a5b63;
+}
+
+.app-container[data-theme="dark"] .offer-type-option.is-active {
+  border-color: var(--primary);
+}
+
+.app-container[data-theme="dark"] .offer-dish-search-icon,
+.app-container[data-theme="dark"] .offer-dish-search-clear {
+  color: #8a8b93;
+}
+
+.app-container[data-theme="dark"] .offer-dish-search-clear:hover {
+  background-color: #2a2b31;
+  color: var(--text-dark);
+}
+
+.app-container[data-theme="dark"] .offer-dish-group-head {
+  background-color: #222329;
+  color: #d4d5dc;
+}
+
+.app-container[data-theme="dark"] .offer-preview-th {
+  background-color: #222329;
+  color: var(--text-muted);
+}
+
+.app-container[data-theme="dark"] .offer-dish-row {
+  border-top-color: #2a2b31;
+}
+
+.app-container[data-theme="dark"] .offer-dish-row.is-selected {
+  background-color: rgba(240, 90, 40, 0.1);
+}
+
+.app-container[data-theme="dark"] .offer-dish-new-price {
+  color: #ff8a5c;
+}
+
+.app-container[data-theme="dark"] .offer-preview-status {
+  background-color: #2a2b31;
+  color: #d4d5dc;
+}
+
+.app-container[data-theme="dark"] .offer-preview-status.is-active {
+  background-color: rgba(16, 185, 129, 0.14);
+  color: #6ee7b7;
+}
+
+.app-container[data-theme="dark"] .offer-preview-status.is-scheduled {
+  background-color: rgba(59, 130, 246, 0.16);
+  color: #93c5fd;
+}
+
+.app-container[data-theme="dark"] .offer-preview-status.is-expired {
+  background-color: rgba(239, 68, 68, 0.14);
+  color: #fca5a5;
+}
+
+.app-container[data-theme="dark"] .offer-preview-save,
+.app-container[data-theme="dark"] .offer-preview-total-savings dd {
+  color: #6ee7b7;
+}
+
+.app-container[data-theme="dark"] .offer-save-error {
+  border-color: #7f1d1d;
+  background-color: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+
+.app-container[data-theme="dark"] .offer-confirm-text {
+  color: #c7c9d1;
+}
+
+.app-container[data-theme="dark"] .offer-confirm-note {
+  border-color: #3a3b42;
+  background-color: #222329;
+  color: #c7c9d1;
+}
+
+.app-container[data-theme="dark"] .offer-col-value.status-badge.scheduled {
+  color: #93c5fd;
+}
+
+.app-container[data-theme="dark"] .offer-col-value.status-badge.expired {
+  color: #fca5a5;
+}
+
+.app-container[data-theme="dark"] .offer-col-value.status-badge.unscheduled {
+  color: #fcd34d;
+}
+
+.app-container[data-theme="dark"] .offer-col-value.status-badge.inactive {
+  color: var(--text-muted);
+}

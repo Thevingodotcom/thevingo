@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { API_URL } from './config';
 import logoIcon from './assets/icons/Frame 123.svg';
@@ -30,7 +30,20 @@ import TestPage from './pages/test/TestPage';
 import Bootstrap from './app/Bootstrap';
 import { useAuth } from './app/AuthContext';
 import { ProtectedRoute as PrivateRoute, PublicRoute } from './app/RouteGuard';
+import authStorage from './app/authStorage';
+import UserMenu from './app/UserMenu';
+import { useTheme } from './app/ThemeContext';
 import { haptics } from './utils/haptics';
+
+// Fetch JSON bypassing the HTTP cache; resolves null on non-2xx responses
+const fetchJsonNoStore = async (url, headers) => {
+  const res = await fetch(url, { headers, cache: 'no-store' });
+  if (!res.ok) return null;
+  return res.json();
+};
+
+// Ignore a refresh request if the shared data was fetched this recently (ms)
+const DASHBOARD_REFRESH_MIN_INTERVAL = 2000;
 
 // Custom Speedometer/Dashboard SVG Icon
 const DashboardIcon = () => (
@@ -52,11 +65,14 @@ const HamburgerIcon = () => (
 );
 
 // Dashboard Layout Shell
-const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarCollapsed, setIsSidebarCollapsed }) => {
+const DashboardLayout = ({ currentUser, handleLogout, isSidebarCollapsed, setIsSidebarCollapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const sidebarRef = useRef(null);
   const hamburgerRef = useRef(null);
+  // Dark mode is scoped to the dashboard app only (see ThemeContext.jsx): applying
+  // it here, on .app-container, keeps the public site / auth pages untouched.
+  const { theme } = useTheme();
 
   // Close sidebar drawer on click outside (mobile only)
   useEffect(() => {
@@ -96,8 +112,13 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
 
   const activeTab = getActiveTab();
 
+  const onLogoutClick = () => {
+    haptics.warning();
+    handleLogout();
+  };
+
   return (
-    <div className="app-container">
+    <div className="app-container" data-theme={theme}>
       {/* Navbar Header */}
       <header className="navbar">
         <div className="navbar-left">
@@ -114,19 +135,7 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
         </div>
 
         <div className="navbar-right">
-          <div className="user-profile">
-            <h4 className="user-name">{currentUser ? currentUser.username : 'Krishna Ram'}</h4>
-            <p className="user-role">{currentUser ? currentUser.role : 'Admin'}</p>
-          </div>
-          <div className="user-avatar">
-            {getInitials(currentUser ? currentUser.username : 'Krishna Ram')}
-          </div>
-          <button className="navbar-logout-btn" onClick={() => {
-            haptics.warning();
-            handleLogout();
-          }}>
-            Logout
-          </button>
+          <UserMenu currentUser={currentUser} onLogout={onLogoutClick} />
         </div>
       </header>
 
@@ -209,6 +218,29 @@ const DashboardLayout = ({ currentUser, getInitials, handleLogout, isSidebarColl
   );
 };
 
+// Kitchen menu route: Settings -> "Open Trash" navigates here with
+// `state: { openTrash: true }`. The request is cleared (replace) once MenuList
+// has handled it, so Back/refresh doesn't reopen Trash.
+function KitchenMenuRoute({ categories, setCategories, onMenuRefresh }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const openTrashRequested = Boolean(location.state && location.state.openTrash);
+
+  const handleTrashRequestHandled = useCallback(() => {
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+  }, [navigate, location.pathname, location.search]);
+
+  return (
+    <MenuList
+      categories={categories}
+      setCategories={setCategories}
+      onMenuRefresh={onMenuRefresh}
+      openTrashRequested={openTrashRequested}
+      onTrashRequestHandled={handleTrashRequestHandled}
+    />
+  );
+}
+
 // Component to automatically scroll to the top of the page on route changes
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -222,30 +254,113 @@ function ScrollToTop() {
 
 function App() {
   const navigate = useNavigate();
-  const { currentUser, setCurrentUser, logout } = useAuth();
+  const { currentUser, setCurrentUser, login, logout } = useAuth();
 
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
+  // Logout lands on the home page. The current (/dashboard...) history entry is
+  // replaced so Back doesn't return to a dead protected page. logout() clears the
+  // session synchronously and tells ProtectedRoute to send stragglers to '/' (not
+  // /login), because router location updates are transitions and may commit after
+  // the auth state update.
+  const handleLogout = useCallback(() => {
+    navigate('/', { replace: true });
+    logout({ redirectTo: '/' });
+  }, [navigate, logout]);
+
+  // After Login/Register: sync the stored session into AuthContext and replace the
+  // /login (or /register) entry, so Back from the dashboard goes to the page before it.
+  const handleAuthSuccess = useCallback(() => {
+    try {
+      login(authStorage.getUser(), authStorage.getToken());
+    } catch (e) {
+      console.error(e);
     }
-    return name.trim().slice(0, 2).toUpperCase();
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login', { replace: true });
-  };
+    navigate('/dashboard', { replace: true });
+  }, [login, navigate]);
 
   // Sidebar state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => window.innerWidth <= 768);
 
   // Shared Data State
-  const [categories, setCategories] = useState([]);
-  const [offers, setOffers] = useState([]);
+  const [categories, setCategoriesState] = useState([]);
+  const [offers, setOffersState] = useState([]);
   const [scanCount, setScanCount] = useState(0);
   const [isDataLoading, setIsDataLoading] = useState(false);
+
+  // Bumped whenever the session user changes, so responses for a previous user are dropped
+  const dataGenerationRef = useRef(0);
+  const lastDataFetchAtRef = useRef(0);
+  // Bumped on every local edit (MenuList / Offers) so an in-flight refresh can't overwrite it
+  const categoriesEditRef = useRef(0);
+  const offersEditRef = useRef(0);
+
+  const setCategories = useCallback((value) => {
+    categoriesEditRef.current += 1;
+    setCategoriesState(value);
+  }, []);
+
+  const setOffers = useCallback((value) => {
+    offersEditRef.current += 1;
+    setOffersState(value);
+  }, []);
+
+  // Fetch categories (dishes), offers and scan stats. `silent` keeps the current
+  // counts on screen instead of showing the "..." loading placeholder.
+  const loadDashboardData = useCallback(async ({ silent = false } = {}) => {
+    const token = authStorage.getToken();
+    if (!token) return;
+
+    const generation = dataGenerationRef.current;
+    const categoriesEdit = categoriesEditRef.current;
+    const offersEdit = offersEditRef.current;
+    lastDataFetchAtRef.current = Date.now();
+    if (!silent) setIsDataLoading(true);
+
+    try {
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const [catResult, offResult, statsResult] = await Promise.allSettled([
+        fetchJsonNoStore(`${API_URL}/api/menu/categories`, headers),
+        fetchJsonNoStore(`${API_URL}/api/offers`, headers),
+        fetchJsonNoStore(`${API_URL}/api/auth/dashboard`, headers)
+      ]);
+
+      if (generation !== dataGenerationRef.current) return;
+
+      if (catResult.status === 'fulfilled' && catResult.value && categoriesEdit === categoriesEditRef.current) {
+        setCategoriesState(catResult.value.categories || []);
+      }
+      if (offResult.status === 'fulfilled' && offResult.value && offersEdit === offersEditRef.current) {
+        setOffersState(offResult.value.offers || []);
+      }
+      if (statsResult.status === 'fulfilled' && typeof statsResult.value?.stats?.scanCount === 'number') {
+        setScanCount(statsResult.value.stats.scanCount);
+      }
+      [catResult, offResult, statsResult].forEach((result) => {
+        if (result.status === 'rejected') {
+          console.error('Failed to fetch dashboard data:', result.reason);
+        }
+      });
+    } finally {
+      if (!silent && generation === dataGenerationRef.current) {
+        setIsDataLoading(false);
+      }
+    }
+  }, []);
+
+  // Called when the dashboard index mounts so counts reflect edits made elsewhere
+  const refreshDashboardData = useCallback(() => {
+    if (Date.now() - lastDataFetchAtRef.current < DASHBOARD_REFRESH_MIN_INTERVAL) return;
+    loadDashboardData({ silent: true });
+  }, [loadDashboardData]);
+
+  // After restoring dishes from Trash: reload categories so restored dishes
+  // (and revived categories) appear without a page refresh.
+  const refreshMenuData = useCallback(() => {
+    loadDashboardData({ silent: true });
+  }, [loadDashboardData]);
+
+  const openDishTrash = useCallback(() => {
+    navigate('/dashboard/kitchen-menu', { state: { openTrash: true } });
+  }, [navigate]);
 
   // Shared Settings state
   const [restaurantName, setRestaurantName] = useState('thevingo.com');
@@ -270,47 +385,127 @@ function App() {
     }
   }, [currentUser]);
 
+  // Key the shared-data effect on the session user's identity (not the object), so
+  // unrelated profile updates (avatar, settings) or Bootstrap re-setting the same user
+  // don't tear down the SSE stream and refetch everything.
+  const sessionUserKey = currentUser ? String(currentUser.id ?? currentUser.email ?? 'user') : null;
+  const scanStreamId = currentUser
+    ? (currentUser.restaurant_name
+      ? currentUser.restaurant_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      : (currentUser.id ? currentUser.id.toString() : ''))
+    : '';
+
   useEffect(() => {
-    if (!currentUser) {
-      setCategories([]);
-      setOffers([]);
+    dataGenerationRef.current += 1;
+    const generation = dataGenerationRef.current;
+
+    if (!sessionUserKey) {
+      setCategoriesState([]);
+      setOffersState([]);
       setScanCount(0);
+      setIsDataLoading(false);
       return;
     }
 
-    const fetchAllData = async () => {
-      setIsDataLoading(true);
+    loadDashboardData();
+
+    // Dedicated silent fetcher for scan count updates (doesn't trigger full loading spinner)
+    const fetchDashboardScanCount = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const headers = { 'Authorization': `Bearer ${token}` };
-
-        const [catRes, offRes, statsRes] = await Promise.all([
-          fetch(`${API_URL}/api/menu/categories`, { headers }),
-          fetch(`${API_URL}/api/offers`, { headers }),
-          fetch(`${API_URL}/api/auth/dashboard`, { headers })
-        ]);
-
-        if (catRes.ok) {
-          const data = await catRes.json();
-          setCategories(data.categories || []);
+        const token = authStorage.getToken();
+        if (!token) return;
+        const res = await fetch(`${API_URL}/api/auth/dashboard?_t=${Date.now()}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (generation === dataGenerationRef.current && data?.stats && typeof data.stats.scanCount === 'number') {
+            setScanCount(data.stats.scanCount);
+          }
         }
-        if (offRes.ok) {
-          const data = await offRes.json();
-          setOffers(data.offers || []);
-        }
-        if (statsRes.ok) {
-          const data = await statsRes.json();
-          setScanCount(data.stats?.scanCount || 0);
-        }
-      } catch (err) {
-        console.error('Failed to fetch data in parallel:', err);
-      } finally {
-        setIsDataLoading(false);
+      } catch {
+        // Silent sync
       }
     };
 
-    fetchAllData();
-  }, [currentUser]);
+    // 1. Server-Sent Events (SSE) for instant real-time scan count sync from any device
+    let eventSource = null;
+    if (scanStreamId && typeof EventSource !== 'undefined') {
+      try {
+        eventSource = new EventSource(`${API_URL}/api/menu/public/${scanStreamId}/stream`);
+        eventSource.addEventListener('scan-updated', (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data && typeof data.scanCount === 'number') {
+              setScanCount(data.scanCount);
+            } else {
+              fetchDashboardScanCount();
+            }
+          } catch {
+            fetchDashboardScanCount();
+          }
+        });
+      } catch {
+        // SSE not supported or network error
+      }
+    }
+
+    // 2. Same-browser instant cross-tab sync via BroadcastChannel
+    let broadcastChannel = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        broadcastChannel = new BroadcastChannel('thevingo_scan_updates');
+        broadcastChannel.onmessage = (event) => {
+          if (event.data?.type === 'SCAN_COUNT_UPDATED') {
+            if (typeof event.data.scanCount === 'number') {
+              setScanCount(event.data.scanCount);
+            } else {
+              fetchDashboardScanCount();
+            }
+          }
+        };
+      } catch {
+        // BroadcastChannel ignored
+      }
+    }
+
+    // 3. Revalidate scan count whenever user focuses or returns to the dashboard tab
+    const handleRevalidation = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchDashboardScanCount();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', handleRevalidation);
+      document.addEventListener('visibilitychange', handleRevalidation);
+    }
+
+    // 4. Fallback background polling (every 10 seconds while active)
+    const pollInterval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchDashboardScanCount();
+      }
+    }, 10000);
+
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+      if (broadcastChannel) {
+        broadcastChannel.close();
+      }
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', handleRevalidation);
+        document.removeEventListener('visibilitychange', handleRevalidation);
+      }
+      clearInterval(pollInterval);
+    };
+  }, [sessionUserKey, scanStreamId, loadDashboardData]);
 
   return (
     <Bootstrap>
@@ -328,17 +523,7 @@ function App() {
         path="/login" 
         element={
           <PublicRoute>
-            <Login onLogin={() => {
-              try {
-                const saved = localStorage.getItem('user');
-                if (saved) {
-                  setCurrentUser(JSON.parse(saved));
-                }
-              } catch (e) {
-                console.error(e);
-              }
-              navigate('/dashboard');
-            }} />
+            <Login onLogin={handleAuthSuccess} />
           </PublicRoute>
         } 
       />
@@ -347,17 +532,7 @@ function App() {
         path="/register" 
         element={
           <PublicRoute>
-            <Register onRegister={() => {
-              try {
-                const saved = localStorage.getItem('user');
-                if (saved) {
-                  setCurrentUser(JSON.parse(saved));
-                }
-              } catch (e) {
-                console.error(e);
-              }
-              navigate('/dashboard');
-            }} />
+            <Register onRegister={handleAuthSuccess} />
           </PublicRoute>
         } 
       />
@@ -395,20 +570,19 @@ function App() {
         element={
           <PrivateRoute>
             <DashboardLayout 
-              currentUser={currentUser} 
-              getInitials={getInitials} 
-              handleLogout={handleLogout} 
+              currentUser={currentUser}
+              handleLogout={handleLogout}
               isSidebarCollapsed={isSidebarCollapsed} 
               setIsSidebarCollapsed={setIsSidebarCollapsed} 
             />
           </PrivateRoute>
         }
       >
-        <Route index element={<Dashboard categories={categories} offers={offers} scanCount={scanCount} isDataLoading={isDataLoading} />} />
-        <Route path="kitchen-menu" element={<MenuList categories={categories} setCategories={setCategories} />} />
-        <Route path="offers" element={<Offers offers={offers} setOffers={setOffers} />} />
+        <Route index element={<Dashboard categories={categories} offers={offers} scanCount={scanCount} isDataLoading={isDataLoading} onRefresh={refreshDashboardData} />} />
+        <Route path="kitchen-menu" element={<KitchenMenuRoute categories={categories} setCategories={setCategories} onMenuRefresh={refreshMenuData} />} />
+        <Route path="offers" element={<Offers offers={offers} setOffers={setOffers} categories={categories} />} />
         <Route path="distribution" element={<Distribution restaurantName={restaurantName} setRestaurantName={setRestaurantName} tagline={tagline} setTagline={setTagline} currentUser={currentUser} />} />
-        <Route path="settings" element={<Settings currentUser={currentUser} setCurrentUser={setCurrentUser} restaurantName={restaurantName} setRestaurantName={setRestaurantName} tagline={tagline} setTagline={setTagline} hotelAddress={hotelAddress} setHotelAddress={setHotelAddress} hotelCity={hotelCity} setHotelCity={setHotelCity} hotelState={hotelState} setHotelState={setHotelState} />} />
+        <Route path="settings" element={<Settings categories={categories} onOpenTrash={openDishTrash} currentUser={currentUser} setCurrentUser={setCurrentUser} restaurantName={restaurantName} setRestaurantName={setRestaurantName} tagline={tagline} setTagline={setTagline} hotelAddress={hotelAddress} setHotelAddress={setHotelAddress} hotelCity={hotelCity} setHotelCity={setHotelCity} hotelState={hotelState} setHotelState={setHotelState} />} />
       </Route>
 
       {/* Fallback redirect */}
